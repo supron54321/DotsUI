@@ -4,5 +4,8 @@
   "version": "0.0.1",
   "unity": "2019.3",
   "type": "template",
-  "hideInEditor": false
+  "hideInEditor": false,
+  "dependencies": {
+    "com.dotsui.core": "0.0.1"
+  }
 }
