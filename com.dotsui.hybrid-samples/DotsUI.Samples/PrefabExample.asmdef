@@ -1,0 +1,19 @@
+{
+    "name": "PrefabExample",
+    "references": [
+        "GUID:d7eb76657380f0942b1816e18f4aa72a",
+        "GUID:3ac3ec5cd1a4242478cac758d1ff6cf8",
+        "GUID:10ff06164b46ab543955b32318731559",
+        "GUID:734d92eba21c94caba915361bd5ac177",
+        "GUID:d8b63aba1907145bea998dd612889d6b",
+        "GUID:8819f35a0fc84499b990e90a4ca1911f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": []
+}

@@ -1,5 +1,6 @@
 # List of known issues
 
+* Mobile input is not implemented yet
 * ConvertToEntity workflow doesn't work. Use RectTransformConversionUtils and DotsUIPrefab to convert from GameObject world to DOTS
 * Drag/drop events are not supported yet
 * Prefab or canvas conversion creates new entities for sprites and fonts (conversion system holds only per-prefab asset->entity mapping)

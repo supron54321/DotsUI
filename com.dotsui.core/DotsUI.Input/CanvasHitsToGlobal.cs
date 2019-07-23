@@ -21,9 +21,9 @@ namespace DotsUI.Input
             if (PerCanvasHits.Length % GlobalHits.Length != 0)
                 throw new InvalidOperationException();
 #endif
-            NativeArray<int> CurrentLayers = new NativeArray<int>(GlobalHits.Length, Allocator.Temp);
-            for (int i = 0; i < CurrentLayers.Length; i++)
-                CurrentLayers[i] = int.MinValue;
+            NativeArray<int> currentLayers = new NativeArray<int>(GlobalHits.Length, Allocator.Temp);
+            for (int i = 0; i < currentLayers.Length; i++)
+                currentLayers[i] = int.MinValue;
 
             for (int i = 0; i < Roots.Length; i++)
             {
@@ -31,10 +31,10 @@ namespace DotsUI.Input
                 for (int j = 0; j < GlobalHits.Length; j++)
                 {
                     var hit = PerCanvasHits[i * GlobalHits.Length + j];
-                    if (hit != default && layer > CurrentLayers[j])
+                    if (hit != default && layer > currentLayers[j])
                     {
                         GlobalHits[j] = hit;
-                        CurrentLayers[j] = layer;
+                        currentLayers[j] = layer;
                     }
                 }
             }
