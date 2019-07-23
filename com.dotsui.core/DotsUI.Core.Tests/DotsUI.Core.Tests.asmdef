@@ -1,0 +1,20 @@
+{
+    "name": "DotsUI.Core.Tests",
+    "references": [
+        "GUID:d7eb76657380f0942b1816e18f4aa72a",
+        "GUID:734d92eba21c94caba915361bd5ac177",
+        "GUID:8e2f79f713f5a47dcb69903037d4bc0e",
+        "GUID:d8b63aba1907145bea998dd612889d6b"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": []
+}

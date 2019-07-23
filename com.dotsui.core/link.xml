@@ -1,0 +1,6 @@
+<linker>
+       <assembly fullname="UnityEngine.CoreModule" preserve="all"/>
+	   <assembly fullname="UnityEngine.CoreModule">
+       		<type fullname="UnityEngine.NoAllocHelpers" preserve="all"/>
+       </assembly>
+</linker>

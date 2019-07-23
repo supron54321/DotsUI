@@ -1,0 +1,12 @@
+{
+  "name": "com.dotsui.core",
+  "displayName": "DotsUI Core",
+  "version": "0.0.1",
+  "unity": "2019.3",
+  "description": "This package contains DotsUI core. Core is based on pure DOTS, without UnityEngine dependencies. If you are looking for the complete UI solution, download DotsUI.UnityEngine or DotsUI.Tiny packages.",
+  "type": "template",
+  "dependencies": {
+    "com.unity.entities": ""
+  },
+  "hideInEditor": false
+}

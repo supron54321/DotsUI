@@ -1,0 +1,28 @@
+{
+    "name": "DotsUI.Controls.Tests",
+    "references": [
+        "GUID:3ac3ec5cd1a4242478cac758d1ff6cf8",
+        "GUID:654a54fcb30befc49bd480c63eb9629c",
+        "GUID:d7eb76657380f0942b1816e18f4aa72a",
+        "GUID:b92ff8b696eb46a4b90382b319e963fe",
+        "GUID:e0cd26848372d4e5c891c569017e11f1",
+        "GUID:734d92eba21c94caba915361bd5ac177",
+        "GUID:8e2f79f713f5a47dcb69903037d4bc0e",
+        "GUID:8a2eafa29b15f444eb6d74f94a930e1d",
+        "GUID:27619889b8ba8c24980f49ee34dbb44a",
+        "GUID:0acc523941302664db1f4e527237feb3",
+        "GUID:d8b63aba1907145bea998dd612889d6b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": []
+}
