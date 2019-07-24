@@ -21,20 +21,20 @@ namespace DotsUI.UnityLegacy
             var pointerContainerEntity = GetSingletonEntity<NativePointerInputContainer>();
             var keyboardContainerEntity = GetSingletonEntity<NativeKeyboardInputContainer>();
 
-            var pointerBuffer = EntityManager.GetBuffer<NativePointerInputBuffer>(pointerContainerEntity);
-            var keyboardBuffer = EntityManager.GetBuffer<NativeKeyboardInputBuffer>(keyboardContainerEntity);
+            var pointerBuffer = EntityManager.GetBuffer<NativePointerButtonEvent>(pointerContainerEntity);
+            var keyboardBuffer = EntityManager.GetBuffer<NativeKeyboardInputEvent>(keyboardContainerEntity);
 
             GetSingletonEntity<NativeKeyboardInputContainer>();
             for (int i = 0; i < 3; i++)
             {
                 if (UnityEngine.Input.GetMouseButtonDown(i))
-                    pointerBuffer.Add(new NativePointerInputBuffer()
+                    pointerBuffer.Add(new NativePointerButtonEvent()
                     {
                         EventType = NativeInputEventType.PointerDown,
                         Button = (PointerButton)i
                     });
                 if (UnityEngine.Input.GetMouseButtonUp(i))
-                    pointerBuffer.Add(new NativePointerInputBuffer()
+                    pointerBuffer.Add(new NativePointerButtonEvent()
                     {
                         EventType = NativeInputEventType.PointerUp,
                         Button = (PointerButton)i
@@ -45,7 +45,7 @@ namespace DotsUI.UnityLegacy
             {
                 if (m_Events.type == EventType.KeyDown)
                 {
-                    keyboardBuffer.Add(new NativeKeyboardInputBuffer()
+                    keyboardBuffer.Add(new NativeKeyboardInputEvent()
                     {
                         EventType = NativeInputEventType.KeyDown,
                         Character = m_Events.character,
@@ -55,7 +55,7 @@ namespace DotsUI.UnityLegacy
                 }
                 if (m_Events.type == EventType.KeyUp)
                 {
-                    keyboardBuffer.Add(new NativeKeyboardInputBuffer()
+                    keyboardBuffer.Add(new NativeKeyboardInputEvent()
                     {
                         EventType = NativeInputEventType.KeyUp,
                         Character = m_Events.character,

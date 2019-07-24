@@ -136,8 +136,8 @@ namespace DotsUI.Input
 
             m_Touches = new NativeHashMap<int, Touch>(5, Allocator.Persistent);
             EntityManager.CreateEntity(typeof(InputSystemState));
-            EntityManager.CreateEntity(typeof(NativePointerInputContainer), typeof(NativePointerInputBuffer));
-            EntityManager.CreateEntity(typeof(NativeKeyboardInputContainer), typeof(NativeKeyboardInputBuffer));
+            EntityManager.CreateEntity(typeof(NativePointerInputContainer), typeof(NativePointerButtonEvent));
+            EntityManager.CreateEntity(typeof(NativeKeyboardInputContainer), typeof(NativeKeyboardInputEvent));
             base.OnCreateManager();
         }
 
@@ -255,16 +255,16 @@ namespace DotsUI.Input
             return ret;
         }
 
-        private void GatherEvents(Allocator allocator, out NativeArray<(NativeInputEventType, PointerButton)> pointerEventsArray, out NativeArray<NativeKeyboardInputBuffer> keyboardEventArray)
+        private void GatherEvents(Allocator allocator, out NativeArray<(NativeInputEventType, PointerButton)> pointerEventsArray, out NativeArray<NativeKeyboardInputEvent> keyboardEventArray)
         {
             var pointerContainerEntity = GetSingletonEntity<NativePointerInputContainer>();
             var keyboardContainerEntity = GetSingletonEntity<NativeKeyboardInputContainer>();
 
-            var pointerBuffer = EntityManager.GetBuffer<NativePointerInputBuffer>(pointerContainerEntity);
-            var keyboardBuffer = EntityManager.GetBuffer<NativeKeyboardInputBuffer>(keyboardContainerEntity);
+            var pointerBuffer = EntityManager.GetBuffer<NativePointerButtonEvent>(pointerContainerEntity);
+            var keyboardBuffer = EntityManager.GetBuffer<NativeKeyboardInputEvent>(keyboardContainerEntity);
 
             pointerEventsArray = new NativeArray<(NativeInputEventType, PointerButton)>(pointerBuffer.Length, allocator);
-            keyboardEventArray = new NativeArray<NativeKeyboardInputBuffer>(keyboardBuffer.Length, allocator);
+            keyboardEventArray = new NativeArray<NativeKeyboardInputEvent>(keyboardBuffer.Length, allocator);
 
             for (int i = 0; i < pointerBuffer.Length; i++)
                 pointerEventsArray[i] = (pointerBuffer[i].EventType, pointerBuffer[i].Button);

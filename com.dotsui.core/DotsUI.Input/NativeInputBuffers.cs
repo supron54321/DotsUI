@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Unity.Entities;
@@ -21,12 +22,23 @@ namespace DotsUI.Input
     {
     }
 
-    public struct NativePointerInputBuffer : IBufferElementData
+    public struct NativePointerButtonEvent : IBufferElementData
     {
         public NativeInputEventType EventType;
         public PointerButton Button;
     }
-    public struct NativeKeyboardInputBuffer : IBufferElementData
+
+    /// <summary>
+    /// TODO: pointer position support
+    /// </summary>
+    public struct NativePointerState : IBufferElementData
+    {
+        public int PointerId;
+        public Vector2 Position;
+        public Vector2 Delta;
+    }
+
+    public struct NativeKeyboardInputEvent : IBufferElementData
     {
         public NativeInputEventType EventType;
         public KeyboardEventType KbdEvent;

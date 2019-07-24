@@ -6,7 +6,9 @@
   "description": "This package contains DotsUI core. Core is based on pure DOTS, without UnityEngine dependencies. If you are looking for the complete UI solution, download DotsUI.UnityEngine or DotsUI.Tiny packages.",
   "type": "template",
   "dependencies": {
-    "com.unity.entities": "0.0.12-preview.33"
+    "com.unity.entities": "0.0.12-preview.33",
+    "com.unity.burst": "1.1.1",
+    "com.unity.textmeshpro": "2.0.1"
   },
   "hideInEditor": false
 }
