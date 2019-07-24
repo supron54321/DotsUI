@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
 using DotsUI.Core;
-using DotsUI.UnityEngineBackend;
+using DotsUI.Hybrid;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 

@@ -8,7 +8,7 @@ using DotsUI.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace DotsUI.UnityEngineBackend
+namespace DotsUI.Hybrid
 {
     public struct CanvasMeshContainer : ISharedComponentData, IEquatable<CanvasMeshContainer>
     {

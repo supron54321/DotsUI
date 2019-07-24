@@ -8,7 +8,7 @@ using UnityEngine;
 using DotsUI.Input;
 using Unity.Entities;
 
-namespace DotsUI.UnityLegacy
+namespace DotsUI.Hybrid
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
     [UpdateBefore(typeof(ControlsInputSystem))]

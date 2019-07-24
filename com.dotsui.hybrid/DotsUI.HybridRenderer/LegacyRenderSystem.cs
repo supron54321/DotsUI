@@ -13,7 +13,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine.Rendering;
 
-namespace DotsUI.UnityEngineBackend
+namespace DotsUI.Hybrid
 {
     [UpdateInGroup(typeof(RenderSystemGroup))]
     class LegacyRenderSystem : ComponentSystem
@@ -28,11 +28,11 @@ namespace DotsUI.UnityEngineBackend
 
         private struct CanvasLayer : IComparable<CanvasLayer>
         {
-            public int SortID;
+            public int SortId;
             public Entity CanvasEntity;
             public int CompareTo(CanvasLayer other)
             {
-                return SortID.CompareTo(other.SortID);
+                return SortId.CompareTo(other.SortId);
             }
         }
 
@@ -121,7 +121,7 @@ namespace DotsUI.UnityEngineBackend
                         layerEntity[i] = new CanvasLayer()
                         {
                             CanvasEntity = roots[i],
-                            SortID = canvasLayerIdFromEntity[roots[i]].Value
+                            SortId = canvasLayerIdFromEntity[roots[i]].Value
                         };
                     layerEntity.Sort();
                 }

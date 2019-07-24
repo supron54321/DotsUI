@@ -7,7 +7,7 @@ using DotsUI.Core;
 using Unity.Entities;
 using Unity.Jobs;
 
-namespace DotsUI.UnityEngineBackend
+namespace DotsUI.Hybrid
 {
     [UpdateInGroup(typeof(AssetUpdateSystemGroup))]
     class SpriteAssetSystem : JobComponentSystem

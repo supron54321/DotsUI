@@ -8,7 +8,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
-namespace DotsUI.UnityEngineBackend
+namespace DotsUI.Hybrid
 {
 
     [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))]

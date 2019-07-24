@@ -9,7 +9,7 @@ using Unity.Entities;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace DotsUI.UnityEngineBackend
+namespace DotsUI.Hybrid
 {
     [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))]
     class UpdateMissingCanvasComponents : ComponentSystem
