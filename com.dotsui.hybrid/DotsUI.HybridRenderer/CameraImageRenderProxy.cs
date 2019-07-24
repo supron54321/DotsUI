@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace DotsUI.UnityEngineBackend
+namespace DotsUI.Hybrid
 {
     [RequireComponent(typeof(Camera))]
     public class CameraImageRenderProxy : MonoBehaviour
