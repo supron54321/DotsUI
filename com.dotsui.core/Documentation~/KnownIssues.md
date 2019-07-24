@@ -11,3 +11,4 @@
 * InputField has very naive and ugly implementation
 * Input field caret breaks last vertices of UI mesh
 * Tests are disabled (namespace Unity.Entities.Tests not found without manual manifest.json editing)
+* Camera viewport size is not automatically updated
