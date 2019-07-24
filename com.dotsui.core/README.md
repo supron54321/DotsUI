@@ -24,7 +24,7 @@ Project is split into multiple packages: Core, Hybrid renderer/input, and Tiny r
 
 # Contribution #
 
-Since Core is not ready yet, I do not accept pull requests for new features. If you have any suggestions, please create issue. If you really want to help, please test this package and report all issues (check [KnownIssues](Documentation~/KnownIssues.md) before posting new issue).
+Since Core is not ready yet, I do not accept pull requests for new features. If you have any suggestions, please create issue. If you really want to help, please test this package and report all bugs (check [KnownIssues](Documentation~/KnownIssues.md) before posting a new issue).
 
 # FAQ #
 
