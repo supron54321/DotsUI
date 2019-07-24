@@ -11,6 +11,11 @@ namespace DotsUI.Hybrid{
     {
         protected override void ConvertComponent(TextMeshProUGUI unityComponent, Entity entity, RectTransformToEntity rectTransformToEntity, Dictionary<UnityEngine.Object, Entity> assetToEntity, EntityManager commandBuffer)
         {
+            if(unityComponent.font == null)
+            {
+                Debug.LogError($"TextMeshProConverter - font asset cannot be null reference. Object: {unityComponent}", unityComponent);
+                return;
+            }
             if (!assetToEntity.TryGetValue(unityComponent.font, out var fontAsset))
             {
                 fontAsset = TextUtils.CreateFontAssetFromTmp(commandBuffer, unityComponent.font);
