@@ -1,0 +1,17 @@
+{
+    "name": "DotsUI.Hybrid.Editor",
+    "references": [
+        "GUID:10ff06164b46ab543955b32318731559",
+        "GUID:734d92eba21c94caba915361bd5ac177"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": []
+}

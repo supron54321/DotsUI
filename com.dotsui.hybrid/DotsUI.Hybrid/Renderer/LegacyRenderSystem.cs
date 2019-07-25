@@ -230,7 +230,7 @@ namespace DotsUI.Hybrid
         {
             using (new ProfilerSample("RenderSystem.SetVertexBuffer"))
             {
-                //unityMesh.Clear(true);
+                unityMesh.Clear(true);
                 unityMesh.SetVertexBufferParams(vertexArray.Length, m_MeshDescriptors[0], m_MeshDescriptors[1], m_MeshDescriptors[2], m_MeshDescriptors[3], m_MeshDescriptors[4]);
             }
             using (new ProfilerSample("UploadMesh"))
@@ -254,6 +254,7 @@ namespace DotsUI.Hybrid
                         topology = MeshTopology.Triangles,
                         vertexCount = vertexArray.Length
                     };
+                    Debug.Log($"{i} {descr.indexStart} {descr.indexCount}");
                     unityMesh.SetSubMesh(i, descr);
                 }
                 unityMesh.UploadMeshData(false);
