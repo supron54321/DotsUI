@@ -13,10 +13,11 @@ namespace DotsUI.Input
     internal struct UpdatePointerEvents : IJob
     {
         [ReadOnly] public Entity StateEntity;
-        [ReadOnly][DeallocateOnJobCompletion] public NativeArray<Entity> Hits;
+        [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<Entity> Hits;
         [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<MouseInputFrameData> PointerFrameData;
 
-        [ReadOnly] [DeallocateOnJobCompletion]
+        [ReadOnly]
+        [DeallocateOnJobCompletion]
         public NativeArray<(NativeInputEventType, PointerButton)> PointerEvents;
 
         public NativeArray<MouseButtonState> ButtonStates;
@@ -25,6 +26,7 @@ namespace DotsUI.Input
         [ReadOnly] public ComponentDataFromEntity<PointerInputReceiver> ReceiverFromEntity;
         [ReadOnly] public ComponentDataFromEntity<UIParent> ParentFromEntity;
         public ComponentDataFromEntity<InputSystemState> StateFromEntity;
+        [ReadOnly] public float DragThreshold;
 
 
         public void Execute()
@@ -36,7 +38,36 @@ namespace DotsUI.Input
             Entity mouseHit = Hits[0];
             UpdateHover(mouseHit, ref targetToEvent, ref state);
             UpdateButtons(mouseHit, ref targetToEvent, ref state);
+            UpdateDrag(mouseHit, ref targetToEvent, ref state);
             StateFromEntity[StateEntity] = state;
+        }
+
+        private void UpdateDrag(Entity mouseHit, ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent, ref InputSystemState state)
+        {
+            for (int i = 0; i < ButtonStates.Length; i++)
+            {
+                var buttonState = ButtonStates[(int)i];
+                if (buttonState.Pressed && buttonState.PressEntity != default)
+                {
+                    var dragDelta = PointerFrameData[0].Position - buttonState.PressPosition;
+                    var dragLength = math.length(dragDelta);
+                    if (!buttonState.IsDragging)
+                    {
+                        if (dragLength > DragThreshold)
+                        {
+                            buttonState.IsDragging = true;
+                            CreateEvent(buttonState.PressEntity, PointerEventType.BeginDrag, true, (PointerButton) i,
+                                ref targetToEvent);
+                        }
+                    }
+                    else if(dragLength > 0.0f)
+                    {
+                        CreateEvent(buttonState.PressEntity, PointerEventType.Drag, true, (PointerButton)i,
+                            ref targetToEvent);
+                    }
+                }
+                ButtonStates[(int)i] = buttonState;
+            }
         }
 
         private void UpdateButtons(Entity mouseHit,
@@ -61,12 +92,19 @@ namespace DotsUI.Input
             ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent,
             ref InputSystemState state, PointerButton button)
         {
-            var buttonState = ButtonStates[(int) button];
+            var buttonState = ButtonStates[(int)button];
 
             buttonState.Pressed = false;
 
+
             if (buttonState.PressEntity != default)
                 CreateEvent(buttonState.PressEntity, PointerEventType.Up, true, button, ref targetToEvent);
+
+            if (buttonState.IsDragging)
+            {
+                buttonState.IsDragging = false;
+                CreateEvent(buttonState.PressEntity, PointerEventType.EndDrag, true, button, ref targetToEvent);
+            }
 
             if (button == PointerButton.Left)
             {
@@ -78,14 +116,14 @@ namespace DotsUI.Input
 
             //buttonState.PressPosition = PointerFrameData[0].Position;
             buttonState.PressEntity = default;
-            ButtonStates[(int) button] = buttonState;
+            ButtonStates[(int)button] = buttonState;
         }
 
         private void HandleButtonDown(Entity mouseHit,
             ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent,
             ref InputSystemState state, PointerButton button)
         {
-            var buttonState = ButtonStates[(int) button];
+            var buttonState = ButtonStates[(int)button];
 
             buttonState.Pressed = true;
             buttonState.PressPosition = PointerFrameData[0].Position;
@@ -95,9 +133,9 @@ namespace DotsUI.Input
                 if (mouseHit != state.SelectedEntity)
                 {
                     //TODO: Selection event
-                    if(state.SelectedEntity != default)
+                    if (state.SelectedEntity != default)
                         CreateEvent(state.SelectedEntity, PointerEventType.Deselected, true, PointerButton.Left, ref targetToEvent);
-                    if(mouseHit != default)
+                    if (mouseHit != default)
                         CreateEvent(mouseHit, PointerEventType.Selected, true, PointerButton.Left, ref targetToEvent);
                     state.SelectedEntity = mouseHit;
                 }
@@ -106,7 +144,7 @@ namespace DotsUI.Input
             if (mouseHit != default)
                 CreateEvent(mouseHit, PointerEventType.Down, true, button, ref targetToEvent);
 
-            ButtonStates[(int) button] = buttonState;
+            ButtonStates[(int)button] = buttonState;
         }
 
         private void UpdateHover(Entity mouseHit,
@@ -129,6 +167,7 @@ namespace DotsUI.Input
             PointerButton button,
             ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent)
         {
+            Debug.Log($"{target} {type}");
             if (ReceiverFromEntity.Exists(target) && (ReceiverFromEntity[target].ListenerTypes & type) == type)
             {
                 if (!targetToEvent.TryGetValue(target, out var eventBuffer))
@@ -143,22 +182,27 @@ namespace DotsUI.Input
                     targetToEvent.TryAdd(target, eventBuffer);
                 }
 
+                PointerEventData eventData = new PointerEventData()
+                {
+                    Button = button,
+                    ClickCount = -1,
+                    ClickTime = 0.0f,
+                    Delta = PointerFrameData[0].Delta,
+                    PointerId = -1,
+                    Position = PointerFrameData[0].Position,
+                    ScrollDelta = float2.zero,
+                    UseDragThreshold = false,
+                };
+                if (button != PointerButton.Invalid)
+                {
+                    eventData.IsDragging = ButtonStates[(int) button].IsDragging;
+                    eventData.PressPosition = ButtonStates[(int) button].PressPosition;
+                    eventData.PressEntity = ButtonStates[(int) button].PressEntity;
+                }
                 eventBuffer.Add(new PointerInputBuffer()
                 {
                     EventType = type,
-                    EventData = new PointerEventData()
-                    {
-                        Button = button,
-                        ClickCount = -1,
-                        ClickTime = 0.0f,
-                        Delta = PointerFrameData[0].Delta,
-                        IsDragging = false,
-                        PointerId = -1,
-                        Position = PointerFrameData[0].Position,
-                        PressPosition = float2.zero,
-                        ScrollDelta = float2.zero,
-                        UseDragThreshold = false,
-                    }
+                    EventData = eventData
                 });
             }
 

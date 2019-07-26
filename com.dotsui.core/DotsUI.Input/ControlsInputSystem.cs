@@ -60,11 +60,13 @@ namespace DotsUI.Input
         public bool UseDragThreshold;
         public bool IsDragging;
         public PointerButton Button;
+        public Entity PressEntity { get; set; }
     }
 
     internal struct MouseButtonState
     {
         public bool Pressed;
+        public bool IsDragging;
         public float2 PressPosition;
         public Entity PressEntity;
     }
@@ -98,8 +100,11 @@ namespace DotsUI.Input
 
         private ControlsInputBufferSystem m_CommandBufferSystem;
 
+        public float DragThreshold { get; set; }
+
         protected override void OnCreateManager()
         {
+            DragThreshold = 3.0f;
             m_ButtonStates = new NativeArray<MouseButtonState>(3, Allocator.Persistent);
             m_CommandBufferSystem = World.GetOrCreateSystem<ControlsInputBufferSystem>();
 
@@ -201,6 +206,7 @@ namespace DotsUI.Input
                 PointerEvents = pointerEvents,
                 ParentFromEntity = parentFromEntity,
                 PointerFrameData = pointerFrameData,
+                DragThreshold = DragThreshold,
             };
             inputDeps = updatePointerJob.Schedule(inputDeps);
             inputDeps.Complete();

@@ -254,7 +254,6 @@ namespace DotsUI.Hybrid
                         topology = MeshTopology.Triangles,
                         vertexCount = vertexArray.Length
                     };
-                    Debug.Log($"{i} {descr.indexStart} {descr.indexCount}");
                     unityMesh.SetSubMesh(i, descr);
                 }
                 unityMesh.UploadMeshData(false);
