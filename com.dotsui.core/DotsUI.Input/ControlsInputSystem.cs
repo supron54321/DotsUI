@@ -154,9 +154,10 @@ namespace DotsUI.Input
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
+            var smpl = new Profiling.ProfilerSample("GatherEvents");
             GatherEvents(Allocator.TempJob, out var pointerEvents, out var keyboardEvents);
             var pointerFrameData = GatherPointerFrameData(Allocator.TempJob);
-
+            smpl.Dispose();
             NativeArray<Entity> roots = m_RootGroup.ToEntityArray(Allocator.TempJob);
             var childrenFromEntity = GetBufferFromEntity<UIChild>(true);
             var worldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>(true);

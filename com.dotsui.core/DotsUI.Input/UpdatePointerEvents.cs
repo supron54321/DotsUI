@@ -102,8 +102,12 @@ namespace DotsUI.Input
 
             if (buttonState.IsDragging)
             {
-                buttonState.IsDragging = false;
                 CreateEvent(buttonState.PressEntity, PointerEventType.EndDrag, true, button, ref targetToEvent);
+                if (mouseHit != buttonState.PressEntity)
+                {
+                    if(mouseHit != default)
+                        CreateEvent(mouseHit, PointerEventType.Drop, true, button, ref targetToEvent);
+                }
             }
 
             if (button == PointerButton.Left)
@@ -114,7 +118,7 @@ namespace DotsUI.Input
                 }
             }
 
-            //buttonState.PressPosition = PointerFrameData[0].Position;
+            buttonState.IsDragging = false;
             buttonState.PressEntity = default;
             ButtonStates[(int)button] = buttonState;
         }
@@ -167,7 +171,6 @@ namespace DotsUI.Input
             PointerButton button,
             ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent)
         {
-            Debug.Log($"{target} {type}");
             if (ReceiverFromEntity.Exists(target) && (ReceiverFromEntity[target].ListenerTypes & type) == type)
             {
                 if (!targetToEvent.TryGetValue(target, out var eventBuffer))

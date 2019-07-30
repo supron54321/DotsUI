@@ -41,6 +41,17 @@ namespace DotsUI.Core
 
     }
 
+    /// <summary>
+    /// This group is intended for complex transform dependencies like ScrollRect.
+    /// It's executed after hierarchy update and allows you to override some of the transforms without rebuilding entire transforms.
+    /// </summary>
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(RectTransformSystemGroup))]
+    public class PostRectTransformSystemGroup : ComponentSystemGroup
+    {
+
+    }
+
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(RectTransformSystemGroup))]
     public class AssetUpdateSystemGroup : ComponentSystemGroup

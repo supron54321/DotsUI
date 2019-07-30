@@ -76,7 +76,6 @@ namespace DotsUI.Controls
             m_TargetToKeyboardEvent.Dispose();
             m_TargetToPointerEvent.Dispose();
         }
-
         private struct EventProcessor : IJobChunk
         {
             [ReadOnly] public BufferFromEntity<KeyboardInputBuffer> KeyboardInputBufferType;
@@ -296,36 +295,40 @@ namespace DotsUI.Controls
             {
                 m_TargetToKeyboardEvent.Clear();
                 m_TargetToPointerEvent.Clear();
-                CreateTargetToKeyboardEvent createTargetToKeyboardEvent = new CreateTargetToKeyboardEvent()
+                var entityType = GetArchetypeChunkEntityType();
+                using(new Profiling.ProfilerSample("ScheduleJobs"))
                 {
-                    EntityType = GetArchetypeChunkEntityType(),
-                    KbdEventType = GetArchetypeChunkComponentType<KeyboardEvent>(true),
-                    TargetToEvent = m_TargetToKeyboardEvent.ToConcurrent()
-                };
-                inputDeps = createTargetToKeyboardEvent.Schedule(m_KeyboardEventGroup, inputDeps);
-                CreateTargetToPointerEvent createTargetToPointerEvent = new CreateTargetToPointerEvent()
-                {
-                    EntityType = GetArchetypeChunkEntityType(),
-                    PointerEventType = GetArchetypeChunkComponentType<PointerEvent>(true),
-                    TargetToEvent = m_TargetToPointerEvent.ToConcurrent()
-                };
-                inputDeps = createTargetToPointerEvent.Schedule(m_PointerEventGroup, inputDeps);
-                EventProcessor inputEventProcessor = new EventProcessor()
-                {
-                    KeyboardInputBufferType = GetBufferFromEntity<KeyboardInputBuffer>(true),
-                    PointerInputBufferType = GetBufferFromEntity<PointerInputBuffer>(true),
-                    InputFieldCaretLinkFromEntity = GetComponentDataFromEntity<InputFieldCaretEntityLink>(true),
-                    EntityType = GetArchetypeChunkEntityType(),
-                    CaretStateType = GetArchetypeChunkComponentType<InputFieldCaretState>(),
-                    InputFieldType = GetArchetypeChunkComponentType<InputField>(),
-                    TextDataFromEntity = GetBufferFromEntity<TextData>(),
-                    TargetToKeyboardEvent = m_TargetToKeyboardEvent,
-                    TargetToPointerEvent = m_TargetToPointerEvent,
-                    CommandBuff = m_InputSystemBarrier.CreateCommandBuffer().ToConcurrent(),
-                    CaretArchetype = m_CaretArchetype
-                };
-                inputDeps = inputEventProcessor.Schedule(m_InputFieldGroup, inputDeps);
-                m_InputSystemBarrier.AddJobHandleForProducer(inputDeps);
+                    CreateTargetToKeyboardEvent createTargetToKeyboardEvent = new CreateTargetToKeyboardEvent()
+                    {
+                        EntityType = entityType,
+                        KbdEventType = GetArchetypeChunkComponentType<KeyboardEvent>(true),
+                        TargetToEvent = m_TargetToKeyboardEvent.ToConcurrent()
+                    };
+                    inputDeps = createTargetToKeyboardEvent.Schedule(m_KeyboardEventGroup, inputDeps);
+                    CreateTargetToPointerEvent createTargetToPointerEvent = new CreateTargetToPointerEvent()
+                    {
+                        EntityType = entityType,
+                        PointerEventType = GetArchetypeChunkComponentType<PointerEvent>(true),
+                        TargetToEvent = m_TargetToPointerEvent.ToConcurrent()
+                    };
+                    inputDeps = createTargetToPointerEvent.Schedule(m_PointerEventGroup, inputDeps);
+                    EventProcessor inputEventProcessor = new EventProcessor()
+                    {
+                        KeyboardInputBufferType = GetBufferFromEntity<KeyboardInputBuffer>(true),
+                        PointerInputBufferType = GetBufferFromEntity<PointerInputBuffer>(true),
+                        InputFieldCaretLinkFromEntity = GetComponentDataFromEntity<InputFieldCaretEntityLink>(true),
+                        EntityType = entityType,
+                        CaretStateType = GetArchetypeChunkComponentType<InputFieldCaretState>(),
+                        InputFieldType = GetArchetypeChunkComponentType<InputField>(),
+                        TextDataFromEntity = GetBufferFromEntity<TextData>(),
+                        TargetToKeyboardEvent = m_TargetToKeyboardEvent,
+                        TargetToPointerEvent = m_TargetToPointerEvent,
+                        CommandBuff = m_InputSystemBarrier.CreateCommandBuffer().ToConcurrent(),
+                        CaretArchetype = m_CaretArchetype
+                    };
+                    inputDeps = inputEventProcessor.Schedule(m_InputFieldGroup, inputDeps);
+                    m_InputSystemBarrier.AddJobHandleForProducer(inputDeps);
+                }
             }
 
             return inputDeps;

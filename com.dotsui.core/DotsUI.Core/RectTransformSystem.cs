@@ -54,21 +54,11 @@ namespace DotsUI.Core
                 }
             }
 
-            private void UpdateTransform(ref WorldSpaceRect parentLocalToWorldSpaceRect, WorldSpaceMask currentMask, Entity entity, float2 scale, int jobIdx)
+            private void UpdateTransformRecursive(ref WorldSpaceRect parentLocalToWorldSpaceRect, WorldSpaceMask currentMask, Entity entity, float2 scale)
             {
                 var childTransform = RectTransformFromEntity[entity];
-                float2 start = math.lerp(parentLocalToWorldSpaceRect.Min, parentLocalToWorldSpaceRect.Max, math.lerp(childTransform.AnchorMin, childTransform.AnchorMax, childTransform.Pivot)) + childTransform.Position * scale;
-                float2 anchorDiff = childTransform.AnchorMax - childTransform.AnchorMin;
-                float2 size = (parentLocalToWorldSpaceRect.Max - parentLocalToWorldSpaceRect.Min) * anchorDiff + childTransform.SizeDelta * scale;
-
-                float2 min = start - size * childTransform.Pivot;
-                float2 max = start + size * (new float2(1.0f, 1.0f) - childTransform.Pivot);
-
-                var childLocalToWorld = new WorldSpaceRect()
-                {
-                    Min = min,
-                    Max = max,
-                };
+                var childLocalToWorld =
+                    RectTransformUtils.CalculateWorldSpaceRect(parentLocalToWorldSpaceRect, scale, childTransform);
                 LocalToWorldFromEntity[entity] = childLocalToWorld;
                 ElementScaleType[entity] = new ElementScale() { Value = scale };
                 UpdateRectMask(entity, childLocalToWorld, ref currentMask);
@@ -84,7 +74,7 @@ namespace DotsUI.Core
                     var children = ChildFromEntity[entity];
                     for (int i = 0; i < children.Length; i++)
                     {
-                        UpdateTransform(ref childLocalToWorld, currentMask, children[i].Value, scale, jobIdx);
+                        UpdateTransformRecursive(ref childLocalToWorld, currentMask, children[i].Value, scale);
                     }
                 }
             }
@@ -122,7 +112,7 @@ namespace DotsUI.Core
                     for (int j = 0; j < children.Length; j++)
                     {
                         var childTransform = RectTransformFromEntity[children[j].Value];
-                        UpdateTransform(ref parentLocalToWorld, canvasMask, children[j].Value, scale, index);
+                        UpdateTransformRecursive(ref parentLocalToWorld, canvasMask, children[j].Value, scale);
                     }
                 }
             }
