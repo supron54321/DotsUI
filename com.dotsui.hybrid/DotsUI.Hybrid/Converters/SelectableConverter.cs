@@ -8,14 +8,14 @@ using UnityEngine.UI;
 namespace DotsUI.Hybrid{
     internal class SelectableConverter : TypedConverter<UnityEngine.UI.Selectable>
     {
-        protected override void ConvertComponent(UnityEngine.UI.Selectable unityComponent, Entity entity, RectTransformToEntity rectTransformToEntity, Dictionary<UnityEngine.Object, Entity> assetToEntity, EntityManager commandBuffer)
+        protected override void ConvertComponent(UnityEngine.UI.Selectable unityComponent, Entity entity, RectTransformToEntity rectTransformToEntity, Dictionary<UnityEngine.Object, Entity> assetToEntity, EntityManager mgr)
         {
-            commandBuffer.AddComponent(entity, typeof(DotsUI.Input.Selectable));
+            mgr.AddComponent(entity, typeof(DotsUI.Input.Selectable));
             var colors = unityComponent.colors;
             Entity target;
             if(!rectTransformToEntity.TryGetValue(unityComponent.targetGraphic?.rectTransform, out target))
                 target = entity;
-            commandBuffer.AddComponentData(entity, new DotsUI.Input.SelectableColor(){
+            mgr.AddComponentData(entity, new DotsUI.Input.SelectableColor(){
                 Normal = colors.normalColor.ToFloat4(),
                 Hover = colors.highlightedColor.ToFloat4(),
                 Pressed = colors.pressedColor.ToFloat4(),
@@ -24,9 +24,10 @@ namespace DotsUI.Hybrid{
                 TransitionTime = colors.fadeDuration,
                 Target = target
             });
-            commandBuffer.AddComponentData(entity, new DotsUI.Input.PointerInputReceiver{
-                ListenerTypes = DotsUI.Input.PointerEventType.SelectableGroup
-            });
+
+            var pointerInputReceiver = GetOrAddComponent<Input.PointerInputReceiver>(mgr, entity);
+            pointerInputReceiver.ListenerTypes |= Input.PointerEventType.SelectableGroup;
+            mgr.SetComponentData(entity, pointerInputReceiver);
         }
     }
 }

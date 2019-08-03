@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -10,17 +12,19 @@ namespace DotsUI.Core
 {
     public struct HierarchyRebuildContext
     {
-        public ComponentDataFromEntity<RectTransform> RectTransformFromEntity;
+        [ReadOnly] public BufferFromEntity<UIChild> ChildrenFromEntity;
+        [NativeDisableContainerSafetyRestriction]
         public ComponentDataFromEntity<WorldSpaceRect> WorldSpaceRectFromEntity;
-        public ComponentDataFromEntity<ElementScale> ElementScaleFromEntity;
-        public ComponentDataFromEntity<RectMask> RectMaskFromEntity;
-        public ComponentDataFromEntity<WorldSpaceMask> WorldSpaceMaskFromEntity;
-        public BufferFromEntity<UIChild> ChildrenFromEntity;
-        public ComponentDataFromEntity<RebuildElementMeshFlag> RebuildFlagFromEntity;
+        [NativeDisableContainerSafetyRestriction]
+        public ComponentDataFromEntity<RectTransform> RectTransformFromEntity;
+        [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<RebuildElementMeshFlag> RebuildFlagFromEntity;
+        [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<ElementScale> ElementScaleFromEntity;
+        [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<WorldSpaceMask> WorldSpaceMaskFromEntity;
+        [ReadOnly] public ComponentDataFromEntity<RectMask> RectMaskFromEntity;
     }
-    class RectTransformUtils
+    public class RectTransformUtils
     {
-        public void UpdateTransformRecursive(ref WorldSpaceRect parentLocalToWorldSpaceRect, WorldSpaceMask currentMask, Entity entity, float2 scale, ref HierarchyRebuildContext rebuildContext)
+        public static void UpdateTransformRecursive(ref WorldSpaceRect parentLocalToWorldSpaceRect, WorldSpaceMask currentMask, Entity entity, float2 scale, ref HierarchyRebuildContext rebuildContext)
         {
             var childTransform = rebuildContext.RectTransformFromEntity[entity];
             var childLocalToWorld = CalculateWorldSpaceRect(parentLocalToWorldSpaceRect, scale, childTransform);
@@ -43,7 +47,7 @@ namespace DotsUI.Core
                 }
             }
         }
-        private void UpdateRectMask(Entity entity, WorldSpaceRect elementRect, ref WorldSpaceMask mask, ref HierarchyRebuildContext rebuildContext)
+        private static void UpdateRectMask(Entity entity, WorldSpaceRect elementRect, ref WorldSpaceMask mask, ref HierarchyRebuildContext rebuildContext)
         {
             if (rebuildContext.RectMaskFromEntity.Exists(entity))
             {

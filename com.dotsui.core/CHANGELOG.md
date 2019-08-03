@@ -9,6 +9,10 @@
 * Added drag & drop support
 * Added scroll rect
 
+### Changes
+
+* New parent system (updated to match code with Unity.Transforms.ParentSystem)
+
 ### Fixes
 * Fixed issue with last few trangles not being rendered arter InputField lost focus
 * Renamed folders in DotsUI.Hybrid

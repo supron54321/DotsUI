@@ -32,7 +32,7 @@ public class InstantiationSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        int clickCount = m_InstantiateButtonQuery.CalculateLength();
+        int clickCount = m_InstantiateButtonQuery.CalculateEntityCount();
         for (int i = 0; i < clickCount; i++)
         {
             for (int j = 0; j < 10; j++)

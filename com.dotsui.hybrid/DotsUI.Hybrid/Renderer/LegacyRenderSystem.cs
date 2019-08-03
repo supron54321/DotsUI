@@ -104,10 +104,10 @@ namespace DotsUI.Hybrid
 
         protected override void OnUpdate()
         {
-            if (m_UpdateMeshAndCommandBufferGroup.CalculateLength() < 1 && m_UpdateVerticesOnlyGroup.CalculateLength() < 1)
+            if (m_UpdateMeshAndCommandBufferGroup.CalculateEntityCount() < 1 && m_UpdateVerticesOnlyGroup.CalculateEntityCount() < 1)
                 return;
 
-            if (m_UpdateMeshAndCommandBufferGroup.CalculateLength() > 0)
+            if (m_UpdateMeshAndCommandBufferGroup.CalculateEntityCount() > 0)
             {
                 RebuildMeshAndCommandBuffers();
 
@@ -154,7 +154,7 @@ namespace DotsUI.Hybrid
                 EntityManager.RemoveComponent<RebuildCanvasHierarchyFlag>(m_UpdateMeshAndCommandBufferGroup);
             }
 
-            if (m_UpdateVerticesOnlyGroup.CalculateLength() > 0)
+            if (m_UpdateVerticesOnlyGroup.CalculateEntityCount() > 0)
             {
                 UpdateVerticesOnly();
                 EntityManager.RemoveComponent<UpdateCanvasVerticesFlag>(m_UpdateVerticesOnlyGroup);

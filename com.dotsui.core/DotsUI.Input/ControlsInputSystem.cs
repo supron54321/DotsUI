@@ -100,6 +100,7 @@ namespace DotsUI.Input
 
         private ControlsInputBufferSystem m_CommandBufferSystem;
 
+
         public float DragThreshold { get; set; }
 
         protected override void OnCreateManager()
@@ -195,21 +196,29 @@ namespace DotsUI.Input
             inputDeps = canvasHits.Schedule(inputDeps);
 
             EntityCommandBuffer ecb = m_CommandBufferSystem.CreateCommandBuffer();
+            NativeMultiHashMap<Entity, PointerInputBuffer> targetToEvent = new NativeMultiHashMap<Entity, PointerInputBuffer>(16, Allocator.TempJob);
             UpdatePointerEvents updatePointerJob = new UpdatePointerEvents()
             {
                 ButtonStates = m_ButtonStates,
-                EventArchetype = m_PointerEventArchetype,
                 StateEntity = stateEntity,
                 Hits = globalHits,
                 ReceiverFromEntity = pointerReceiverFromEntity,
                 StateFromEntity = stateComponentFromEntity,
-                Manager = ecb,
                 PointerEvents = pointerEvents,
                 ParentFromEntity = parentFromEntity,
                 PointerFrameData = pointerFrameData,
                 DragThreshold = DragThreshold,
+                TargetToEvent = targetToEvent
             };
             inputDeps = updatePointerJob.Schedule(inputDeps);
+            SpawnPointerEvents spawnEventsJob = new SpawnPointerEvents()
+            {
+                EventArchetype = m_PointerEventArchetype,
+                Ecb = ecb,
+                TargetToEvent = targetToEvent
+            };
+            inputDeps = spawnEventsJob.Schedule(inputDeps);
+            inputDeps = targetToEvent.Dispose(inputDeps);
             inputDeps.Complete();
 
             if (keyboardEvents.Length > 0)

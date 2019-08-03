@@ -50,7 +50,7 @@ namespace DotsUI.Input
         }
         protected sealed override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            if (m_PointerEventQuery.CalculateLength() > 0)
+            if (m_PointerEventQuery.CalculateEntityCount() > 0)
             {
                 ClearHashMap<Entity, Entity> clearContainer = new ClearHashMap<Entity, Entity>()
                 {

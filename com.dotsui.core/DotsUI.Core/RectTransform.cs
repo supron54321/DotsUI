@@ -82,6 +82,14 @@ namespace DotsUI.Core
             get { return new float2(Max.x, Min.y); }
         }
 
+        public float2 Size
+        {
+            get
+            {
+                return new float2(Max-Min);
+            }
+        }
+
         [Obsolete]
         public float CalculateWidth()
         {

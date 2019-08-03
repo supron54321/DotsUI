@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Drawing;
 using DotsUI.Core;
 using Unity.Burst;
@@ -9,7 +11,48 @@ using UnityEngine;
 
 namespace DotsUI.Input
 {
-    //[BurstCompile]
+    internal struct SpawnPointerEvents : IJob
+    {
+        [ReadOnly] public NativeMultiHashMap<Entity,  PointerInputBuffer> TargetToEvent;
+        public EntityCommandBuffer Ecb;
+        public EntityArchetype EventArchetype;
+
+        struct EventComparer : IComparer< PointerInputBuffer>
+        {
+            public int Compare(PointerInputBuffer x, PointerInputBuffer y) => x.EventId.CompareTo(y.EventId);
+        }
+
+        public void Execute()
+        {
+            var targets = TargetToEvent.GetKeyArray(Allocator.Temp);
+            NativeList<PointerInputBuffer> eventList = new NativeList<PointerInputBuffer>(4, Allocator.Temp);
+            for (int i = 0; i < targets.Length; i++)
+            {
+                var target = targets[i];
+                EventComparer eventComparer = new EventComparer();
+                if (TargetToEvent.TryGetFirstValue(target, out var item, out var it))
+                {
+                    var eventEntity = Ecb.CreateEntity(EventArchetype);
+                    Ecb.SetComponent(eventEntity, new PointerEvent
+                    {
+                        Target = target
+                    });
+                    var buffer = Ecb.SetBuffer<PointerInputBuffer>(eventEntity);
+                    do
+                    {
+                        eventList.Add(item);
+                    } while (TargetToEvent.TryGetNextValue(out item, ref it));
+                    eventList.Sort(eventComparer);
+                    buffer.ResizeUninitialized(eventList.Length);
+                    for (int j = 0; j < eventList.Length; j++)
+                        buffer[j] = eventList[j];
+                    eventList.Clear();
+                    eventList.Clear();
+                }
+            }
+        }
+    }
+    [BurstCompile]
     internal struct UpdatePointerEvents : IJob
     {
         [ReadOnly] public Entity StateEntity;
@@ -21,28 +64,30 @@ namespace DotsUI.Input
         public NativeArray<(NativeInputEventType, PointerButton)> PointerEvents;
 
         public NativeArray<MouseButtonState> ButtonStates;
-        public EntityCommandBuffer Manager;
-        public EntityArchetype EventArchetype;
         [ReadOnly] public ComponentDataFromEntity<PointerInputReceiver> ReceiverFromEntity;
         [ReadOnly] public ComponentDataFromEntity<UIParent> ParentFromEntity;
         public ComponentDataFromEntity<InputSystemState> StateFromEntity;
         [ReadOnly] public float DragThreshold;
 
+        public NativeMultiHashMap<Entity, PointerInputBuffer> TargetToEvent;
+
+        // used to preserve order in NativeMultiHashMap
+        private int m_EventIdCounter;
 
         public void Execute()
         {
-            NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent =
-                new NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>>(8, Allocator.Temp);
+            m_EventIdCounter = 0;
+            TargetToEvent.Clear();
             var state = StateFromEntity[StateEntity];
             // Currently only mouse is fully supported. That's why I pick only the first hit entity (mouse) and skip touches
             Entity mouseHit = Hits[0];
-            UpdateHover(mouseHit, ref targetToEvent, ref state);
-            UpdateButtons(mouseHit, ref targetToEvent, ref state);
-            UpdateDrag(mouseHit, ref targetToEvent, ref state);
+            UpdateHover(mouseHit, ref state);
+            UpdateButtons(mouseHit, ref state);
+            UpdateDrag(mouseHit, ref state);
             StateFromEntity[StateEntity] = state;
         }
 
-        private void UpdateDrag(Entity mouseHit, ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent, ref InputSystemState state)
+        private void UpdateDrag(Entity mouseHit, ref InputSystemState state)
         {
             for (int i = 0; i < ButtonStates.Length; i++)
             {
@@ -56,41 +101,35 @@ namespace DotsUI.Input
                         if (dragLength > DragThreshold)
                         {
                             buttonState.IsDragging = true;
-                            CreateEvent(buttonState.PressEntity, PointerEventType.BeginDrag, true, (PointerButton) i,
-                                ref targetToEvent);
+                            CreateEvent(buttonState.PressEntity, PointerEventType.BeginDrag, true, (PointerButton)i);
                         }
                     }
-                    else if(dragLength > 0.0f)
+                    else if (dragLength > 0.0f)
                     {
-                        CreateEvent(buttonState.PressEntity, PointerEventType.Drag, true, (PointerButton)i,
-                            ref targetToEvent);
+                        CreateEvent(buttonState.PressEntity, PointerEventType.Drag, true, (PointerButton)i);
                     }
                 }
                 ButtonStates[(int)i] = buttonState;
             }
         }
 
-        private void UpdateButtons(Entity mouseHit,
-            ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent,
-            ref InputSystemState state)
+        private void UpdateButtons(Entity mouseHit, ref InputSystemState state)
         {
             for (int i = 0; i < PointerEvents.Length; i++)
             {
                 var (eventType, button) = PointerEvents[i];
                 if (eventType == NativeInputEventType.PointerDown)
                 {
-                    HandleButtonDown(mouseHit, ref targetToEvent, ref state, button);
+                    HandleButtonDown(mouseHit, ref state, button);
                 }
                 else if (eventType == NativeInputEventType.PointerUp)
                 {
-                    HandleButtonUp(mouseHit, ref targetToEvent, ref state, button);
+                    HandleButtonUp(mouseHit, ref state, button);
                 }
             }
         }
 
-        private void HandleButtonUp(Entity mouseHit,
-            ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent,
-            ref InputSystemState state, PointerButton button)
+        private void HandleButtonUp(Entity mouseHit, ref InputSystemState state, PointerButton button)
         {
             var buttonState = ButtonStates[(int)button];
 
@@ -98,15 +137,15 @@ namespace DotsUI.Input
 
 
             if (buttonState.PressEntity != default)
-                CreateEvent(buttonState.PressEntity, PointerEventType.Up, true, button, ref targetToEvent);
+                CreateEvent(buttonState.PressEntity, PointerEventType.Up, true, button);
 
             if (buttonState.IsDragging)
             {
-                CreateEvent(buttonState.PressEntity, PointerEventType.EndDrag, true, button, ref targetToEvent);
+                CreateEvent(buttonState.PressEntity, PointerEventType.EndDrag, true, button);
                 if (mouseHit != buttonState.PressEntity)
                 {
-                    if(mouseHit != default)
-                        CreateEvent(mouseHit, PointerEventType.Drop, true, button, ref targetToEvent);
+                    if (mouseHit != default)
+                        CreateEvent(mouseHit, PointerEventType.Drop, true, button);
                 }
             }
 
@@ -114,7 +153,7 @@ namespace DotsUI.Input
             {
                 if (mouseHit == buttonState.PressEntity)
                 {
-                    CreateEvent(buttonState.PressEntity, PointerEventType.Click, true, button, ref targetToEvent);
+                    CreateEvent(buttonState.PressEntity, PointerEventType.Click, true, button);
                 }
             }
 
@@ -123,9 +162,7 @@ namespace DotsUI.Input
             ButtonStates[(int)button] = buttonState;
         }
 
-        private void HandleButtonDown(Entity mouseHit,
-            ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent,
-            ref InputSystemState state, PointerButton button)
+        private void HandleButtonDown(Entity mouseHit, ref InputSystemState state, PointerButton button)
         {
             var buttonState = ButtonStates[(int)button];
 
@@ -138,53 +175,36 @@ namespace DotsUI.Input
                 {
                     //TODO: Selection event
                     if (state.SelectedEntity != default)
-                        CreateEvent(state.SelectedEntity, PointerEventType.Deselected, true, PointerButton.Left, ref targetToEvent);
+                        CreateEvent(state.SelectedEntity, PointerEventType.Deselected, true, PointerButton.Left);
                     if (mouseHit != default)
-                        CreateEvent(mouseHit, PointerEventType.Selected, true, PointerButton.Left, ref targetToEvent);
+                        CreateEvent(mouseHit, PointerEventType.Selected, true, PointerButton.Left);
                     state.SelectedEntity = mouseHit;
                 }
             }
 
             if (mouseHit != default)
-                CreateEvent(mouseHit, PointerEventType.Down, true, button, ref targetToEvent);
+                CreateEvent(mouseHit, PointerEventType.Down, true, button);
 
             ButtonStates[(int)button] = buttonState;
         }
 
-        private void UpdateHover(Entity mouseHit,
-            ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent,
-            ref InputSystemState state)
+        private void UpdateHover(Entity mouseHit, ref InputSystemState state)
         {
             if (state.HoveredEntity != mouseHit)
             {
                 if (ReceiverFromEntity.Exists(state.HoveredEntity))
                     CreateEvent(state.HoveredEntity, PointerEventType.Exit, true,
-                        PointerButton.Invalid, ref targetToEvent);
+                        PointerButton.Invalid);
                 if (mouseHit != default)
-                    CreateEvent(mouseHit, PointerEventType.Enter, true, PointerButton.Invalid,
-                        ref targetToEvent);
+                    CreateEvent(mouseHit, PointerEventType.Enter, true, PointerButton.Invalid);
                 state.HoveredEntity = mouseHit;
             }
         }
 
-        private void CreateEvent(Entity target, PointerEventType type, bool propagateParent,
-            PointerButton button,
-            ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent)
+        private void CreateEvent(Entity target, PointerEventType type, bool propagateParent, PointerButton button)
         {
             if (ReceiverFromEntity.Exists(target) && (ReceiverFromEntity[target].ListenerTypes & type) == type)
             {
-                if (!targetToEvent.TryGetValue(target, out var eventBuffer))
-                {
-                    var eventEntity = Manager.CreateEntity(EventArchetype);
-                    var data = new PointerEvent()
-                    {
-                        Target = target,
-                    };
-                    Manager.SetComponent(eventEntity, data);
-                    eventBuffer = Manager.SetBuffer<PointerInputBuffer>(eventEntity);
-                    targetToEvent.TryAdd(target, eventBuffer);
-                }
-
                 PointerEventData eventData = new PointerEventData()
                 {
                     Button = button,
@@ -198,12 +218,13 @@ namespace DotsUI.Input
                 };
                 if (button != PointerButton.Invalid)
                 {
-                    eventData.IsDragging = ButtonStates[(int) button].IsDragging;
-                    eventData.PressPosition = ButtonStates[(int) button].PressPosition;
-                    eventData.PressEntity = ButtonStates[(int) button].PressEntity;
+                    eventData.IsDragging = ButtonStates[(int)button].IsDragging;
+                    eventData.PressPosition = ButtonStates[(int)button].PressPosition;
+                    eventData.PressEntity = ButtonStates[(int)button].PressEntity;
                 }
-                eventBuffer.Add(new PointerInputBuffer()
+                TargetToEvent.Add(target, new PointerInputBuffer()
                 {
+                    EventId = m_EventIdCounter++,
                     EventType = type,
                     EventData = eventData
                 });
@@ -227,7 +248,7 @@ namespace DotsUI.Input
                             propagateParent = false;
                     }
 
-                    CreateEvent(parent, type, propagateParent, button, ref targetToEvent);
+                    CreateEvent(parent, type, propagateParent, button);
                     break;
                 }
             }

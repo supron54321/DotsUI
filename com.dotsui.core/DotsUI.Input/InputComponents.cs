@@ -77,6 +77,7 @@ namespace DotsUI.Input
 
     public struct PointerInputBuffer : IBufferElementData
     {
+        public int EventId;
         public PointerEventType EventType;
         public PointerEventData EventData;
     }

@@ -53,7 +53,7 @@ namespace DotsUI.Core
     }
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(RectTransformSystemGroup))]
+    [UpdateAfter(typeof(PostRectTransformSystemGroup))]
     public class AssetUpdateSystemGroup : ComponentSystemGroup
     {
 

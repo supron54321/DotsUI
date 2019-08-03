@@ -291,7 +291,7 @@ namespace DotsUI.Controls
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            if (m_KeyboardEventGroup.CalculateLength() > 0 || m_PointerEventGroup.CalculateLength() > 0)
+            if (m_KeyboardEventGroup.CalculateEntityCount() > 0 || m_PointerEventGroup.CalculateEntityCount() > 0)
             {
                 m_TargetToKeyboardEvent.Clear();
                 m_TargetToPointerEvent.Clear();

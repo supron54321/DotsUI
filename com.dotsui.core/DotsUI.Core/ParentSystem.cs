@@ -5,33 +5,21 @@ using Unity.Entities;
 using Unity.Jobs;
 using DotsUI.Profiling;
 
+using Child = DotsUI.Core.UIChild;
+using Parent = DotsUI.Core.UIParent;
+using PreviousParent = DotsUI.Core.UIPreviousParent;
+
 namespace DotsUI.Core
 {
     [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))]
-    public class ParentSystem : ComponentSystem
+    public class ParentSystem : JobComponentSystem
     {
-        private EntityQuery m_NewParentsGroup;
-        private EntityQuery m_RemovedParentsGroup;
-        private EntityQuery m_ExistingParentsGroup;
-        private EntityQuery m_DeletedParentsGroup;
+        EntityQuery m_NewParentsGroup;
+        EntityQuery m_RemovedParentsGroup;
+        EntityQuery m_ExistingParentsGroup;
+        EntityQuery m_DeletedParentsGroup;
 
-        private void AddChildToParent(Entity childEntity, Entity parentEntity)
-        {
-            EntityManager.SetComponentData(childEntity, new UIPreviousParent { Value = parentEntity });
-
-            if (!EntityManager.HasComponent(parentEntity, typeof(UIChild)))
-            {
-                var children = EntityManager.AddBuffer<UIChild>(parentEntity);
-                children.Add(new UIChild { Value = childEntity });
-            }
-            else
-            {
-                var children = EntityManager.GetBuffer<UIChild>(parentEntity);
-                children.Add(new UIChild { Value = childEntity });
-            }
-        }
-
-        private int FindChildIndex(DynamicBuffer<UIChild> children, Entity entity)
+        int FindChildIndex(DynamicBuffer<Child> children, Entity entity)
         {
             for (int i = 0; i < children.Length; i++)
             {
@@ -42,73 +30,157 @@ namespace DotsUI.Core
             throw new InvalidOperationException("Child entity not in parent");
         }
 
-        private void RemoveChildFromParent(Entity childEntity, Entity parentEntity)
+        void RemoveChildFromParent(Entity childEntity, Entity parentEntity)
         {
-            if (!EntityManager.HasComponent<UIChild>(parentEntity))
+            if (!EntityManager.HasComponent<Child>(parentEntity))
                 return;
 
-            var children = EntityManager.GetBuffer<UIChild>(parentEntity);
+            var children = EntityManager.GetBuffer<Child>(parentEntity);
             var childIndex = FindChildIndex(children, childEntity);
             children.RemoveAt(childIndex);
             if (children.Length == 0)
             {
-                EntityManager.RemoveComponent(parentEntity, typeof(UIChild));
+                EntityManager.RemoveComponent(parentEntity, typeof(Child));
             }
         }
 
-        private struct ChangedParent
-        {
-            public Entity ChildEntity;
-            public Entity PreviousParentEntity;
-            public Entity ParentEntity;
-        }
         [BurstCompile]
-        private struct FilterChangedParents : IJob
+        struct GatherChangedParents : IJobChunk
         {
-            public NativeList<ChangedParent> ChangedParents;
-            [ReadOnly] public NativeArray<ArchetypeChunk> Chunks;
-            [ReadOnly] public ArchetypeChunkComponentType<UIPreviousParent> PreviousParentType;
-            [ReadOnly] public ArchetypeChunkComponentType<UIParent> ParentType;
+            public NativeMultiHashMap<Entity, Entity>.ParallelWriter ParentChildrenToAdd;
+            public NativeMultiHashMap<Entity, Entity>.ParallelWriter ParentChildrenToRemove;
+            public NativeHashMap<Entity, int>.ParallelWriter UniqueParents;
+            public ArchetypeChunkComponentType<PreviousParent> PreviousParentType;
+
+            [ReadOnly] public ArchetypeChunkComponentType<Parent> ParentType;
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
+            public uint LastSystemVersion;
 
-            public void Execute()
+            public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
-                for (int i = 0; i < Chunks.Length; i++)
+                if (chunk.DidChange(ParentType, LastSystemVersion))
                 {
-                    var chunk = Chunks[i];
-                    if (chunk.DidChange(ParentType, chunk.GetComponentVersion(PreviousParentType)))
-                    {
-                        var chunkPreviousParents = chunk.GetNativeArray(PreviousParentType);
-                        var chunkParents = chunk.GetNativeArray(ParentType);
-                        var chunkEntities = chunk.GetNativeArray(EntityType);
+                    var chunkPreviousParents = chunk.GetNativeArray(PreviousParentType);
+                    var chunkParents = chunk.GetNativeArray(ParentType);
+                    var chunkEntities = chunk.GetNativeArray(EntityType);
 
-                        for (int j = 0; j < chunk.Count; j++)
+                    for (int j = 0; j < chunk.Count; j++)
+                    {
+                        if (chunkParents[j].Value != chunkPreviousParents[j].Value)
                         {
-                            if (chunkParents[j].Value != chunkPreviousParents[j].Value)
-                                ChangedParents.Add(new ChangedParent
-                                {
-                                    ChildEntity = chunkEntities[j],
-                                    ParentEntity = chunkParents[j].Value,
-                                    PreviousParentEntity = chunkPreviousParents[j].Value
-                                });
+                            var childEntity = chunkEntities[j];
+                            var parentEntity = chunkParents[j].Value;
+                            var previousParentEntity = chunkPreviousParents[j].Value;
+
+                            ParentChildrenToAdd.Add(parentEntity, childEntity);
+                            UniqueParents.TryAdd(parentEntity, 0);
+
+                            if (previousParentEntity != Entity.Null)
+                            {
+                                ParentChildrenToRemove.Add(previousParentEntity, childEntity);
+                                UniqueParents.TryAdd(previousParentEntity, 0);
+                            }
+
+                            chunkPreviousParents[j] = new PreviousParent
+                            {
+                                Value = parentEntity
+                            };
                         }
                     }
                 }
             }
         }
 
-        protected override void OnCreateManager()
+        [BurstCompile]
+        struct FindMissingChild : IJob
+        {
+            [ReadOnly] public NativeHashMap<Entity, int> UniqueParents;
+            [ReadOnly] public BufferFromEntity<Child> ChildFromEntity;
+            public NativeList<Entity> ParentsMissingChild;
+
+            public void Execute()
+            {
+                var parents = UniqueParents.GetKeyArray(Allocator.Temp);
+                for (int i = 0; i < parents.Length; i++)
+                {
+                    var parent = parents[i];
+                    if (!ChildFromEntity.Exists(parent))
+                    {
+                        ParentsMissingChild.Add(parent);
+                    }
+                }
+            }
+        }
+
+        [BurstCompile]
+        struct FixupChangedChildren : IJob
+        {
+            [ReadOnly] public NativeMultiHashMap<Entity, Entity> ParentChildrenToAdd;
+            [ReadOnly] public NativeMultiHashMap<Entity, Entity> ParentChildrenToRemove;
+            [ReadOnly] public NativeHashMap<Entity, int> UniqueParents;
+
+            public BufferFromEntity<Child> ChildFromEntity;
+
+            int FindChildIndex(DynamicBuffer<Child> children, Entity entity)
+            {
+                for (int i = 0; i < children.Length; i++)
+                {
+                    if (children[i].Value == entity)
+                        return i;
+                }
+
+                throw new InvalidOperationException("Child entity not in parent");
+            }
+
+            void RemoveChildrenFromParent(Entity parent, DynamicBuffer<Child> children)
+            {
+                if (ParentChildrenToRemove.TryGetFirstValue(parent, out var child, out var it))
+                {
+                    do
+                    {
+                        var childIndex = FindChildIndex(children, child);
+                        children.RemoveAt(childIndex);
+
+                    } while (ParentChildrenToRemove.TryGetNextValue(out child, ref it));
+                }
+            }
+            void AddChildrenToParent(Entity parent, DynamicBuffer<Child> children)
+            {
+                if (ParentChildrenToAdd.TryGetFirstValue(parent, out var child, out var it))
+                {
+                    do
+                    {
+                        children.Add(new Child() { Value = child });
+                    } while (ParentChildrenToAdd.TryGetNextValue(out child, ref it));
+                }
+            }
+
+            public void Execute()
+            {
+                var parents = UniqueParents.GetKeyArray(Allocator.Temp);
+                for (int i = 0; i < parents.Length; i++)
+                {
+                    var parent = parents[i];
+                    var children = ChildFromEntity[parent];
+
+                    RemoveChildrenFromParent(parent, children);
+                    AddChildrenToParent(parent, children);
+                }
+            }
+        }
+
+        protected override void OnCreate()
         {
             m_NewParentsGroup = GetEntityQuery(new EntityQueryDesc
             {
                 All = new ComponentType[]
                 {
-                    ComponentType.ReadOnly<UIParent>(),
-                    ComponentType.ReadOnly<WorldSpaceRect>()
+                    ComponentType.ReadOnly<Parent>(),
+                    ComponentType.ReadOnly<RectTransform>()
                 },
                 None = new ComponentType[]
                 {
-                    typeof(UIPreviousParent)
+                    typeof(PreviousParent)
                 },
                 Options = EntityQueryOptions.FilterWriteGroup
             });
@@ -116,11 +188,11 @@ namespace DotsUI.Core
             {
                 All = new ComponentType[]
                 {
-                    typeof(UIPreviousParent)
+                    typeof(PreviousParent)
                 },
                 None = new ComponentType[]
                 {
-                    typeof(UIParent)
+                    typeof(Parent)
                 },
                 Options = EntityQueryOptions.FilterWriteGroup
             });
@@ -128,170 +200,176 @@ namespace DotsUI.Core
             {
                 All = new ComponentType[]
                 {
-                    ComponentType.ReadOnly<UIParent>(),
-                    ComponentType.ReadOnly<WorldSpaceRect>(),
-                    typeof(UIPreviousParent)
+                    ComponentType.ReadOnly<Parent>(),
+                    ComponentType.ReadOnly<RectTransform>(),
+                    typeof(PreviousParent)
                 },
                 Options = EntityQueryOptions.FilterWriteGroup
             });
+            m_ExistingParentsGroup.SetFilterChanged(typeof(Parent));
             m_DeletedParentsGroup = GetEntityQuery(new EntityQueryDesc
             {
                 All = new ComponentType[]
                 {
-                    typeof(UIChild)
+                    typeof(Child)
                 },
                 None = new ComponentType[]
                 {
-                    typeof(WorldSpaceRect)
+                    typeof(Parent)
                 },
                 Options = EntityQueryOptions.FilterWriteGroup
             });
         }
 
-        private void UpdateNewParents()
+        void UpdateNewParents()
         {
-            using (new ProfilerSample("UpdateNewParents"))
-            {
-                if (m_NewParentsGroup.CalculateLength() < 1)
-                    return;
-                var childEntities = m_NewParentsGroup.ToEntityArray(Allocator.TempJob);
-                var parents = m_NewParentsGroup.ToComponentDataArray<UIParent>(Allocator.TempJob);
+            if (m_NewParentsGroup.IsEmptyIgnoreFilter)
+                return;
 
-                EntityManager.AddComponent(m_NewParentsGroup, typeof(UIPreviousParent));
-
-                for (int i = 0; i < childEntities.Length; i++)
-                {
-                    var childEntity = childEntities[i];
-                    var parentEntity = parents[i].Value;
-
-                    AddChildToParent(childEntity, parentEntity);
-                }
-
-                childEntities.Dispose();
-                parents.Dispose();
-            }
+            EntityManager.AddComponent(m_NewParentsGroup, typeof(PreviousParent));
         }
 
-        private void UpdateRemoveParents()
+        void UpdateRemoveParents()
         {
-            using (new ProfilerSample("UpdateRemoveParents"))
+            if (m_RemovedParentsGroup.IsEmptyIgnoreFilter)
+                return;
+
+            var childEntities = m_RemovedParentsGroup.ToEntityArray(Allocator.TempJob);
+            var previousParents = m_RemovedParentsGroup.ToComponentDataArray<PreviousParent>(Allocator.TempJob);
+
+            for (int i = 0; i < childEntities.Length; i++)
             {
-                if (m_RemovedParentsGroup.CalculateLength() < 1)
-                    return;
+                var childEntity = childEntities[i];
+                var previousParentEntity = previousParents[i].Value;
 
-                var childEntities = m_RemovedParentsGroup.ToEntityArray(Allocator.TempJob);
-                var previousParents = m_RemovedParentsGroup.ToComponentDataArray<UIPreviousParent>(Allocator.TempJob);
-
-                for (int i = 0; i < childEntities.Length; i++)
-                {
-                    var childEntity = childEntities[i];
-                    var previousParentEntity = previousParents[i].Value;
-
-                    RemoveChildFromParent(childEntity, previousParentEntity);
-                }
-
-                EntityManager.RemoveComponent(m_RemovedParentsGroup, typeof(UIPreviousParent));
-                childEntities.Dispose();
-                previousParents.Dispose();
+                RemoveChildFromParent(childEntity, previousParentEntity);
             }
+
+            EntityManager.RemoveComponent(m_RemovedParentsGroup, typeof(PreviousParent));
+            childEntities.Dispose();
+            previousParents.Dispose();
         }
 
-        private void UpdateChangeParents()
+        void UpdateChangeParents()
         {
-            using (new ProfilerSample("UpdateChangeParents"))
+            if (m_ExistingParentsGroup.IsEmptyIgnoreFilter)
+                return;
+
+            var count = m_ExistingParentsGroup.CalculateEntityCount();
+            if (count == 0)
+                return;
+
+            // 1. Get (Parent,Child) to remove
+            // 2. Get (Parent,Child) to add
+            // 3. Get unique Parent change list
+            // 4. Set PreviousParent to new Parent
+            var parentChildrenToAdd = new NativeMultiHashMap<Entity, Entity>(count, Allocator.TempJob);
+            var parentChildrenToRemove = new NativeMultiHashMap<Entity, Entity>(count, Allocator.TempJob);
+            var uniqueParents = new NativeHashMap<Entity, int>(count, Allocator.TempJob);
+            var gatherChangedParentsJob = new GatherChangedParents
             {
-                if (m_ExistingParentsGroup.CalculateLength() < 1)
-                    return;
+                ParentChildrenToAdd = parentChildrenToAdd.AsParallelWriter(),
+                ParentChildrenToRemove = parentChildrenToRemove.AsParallelWriter(),
+                UniqueParents = uniqueParents.AsParallelWriter(),
+                PreviousParentType = GetArchetypeChunkComponentType<PreviousParent>(false),
+                ParentType = GetArchetypeChunkComponentType<Parent>(true),
+                EntityType = GetArchetypeChunkEntityType(),
+                LastSystemVersion = LastSystemVersion
+            };
+            var gatherChangedParentsJobHandle = gatherChangedParentsJob.Schedule(m_ExistingParentsGroup);
+            gatherChangedParentsJobHandle.Complete();
 
-                var changeParentsChunks = m_ExistingParentsGroup.CreateArchetypeChunkArray(Allocator.TempJob);
-                if (changeParentsChunks.Length > 0)
-                {
-                    var parentType = GetArchetypeChunkComponentType<UIParent>(true);
-                    var previousParentType = GetArchetypeChunkComponentType<UIPreviousParent>(true);
-                    var entityType = GetArchetypeChunkEntityType();
-                    var changedParents = new NativeList<ChangedParent>(Allocator.TempJob);
+            // 5. (Structural change) Add any missing Child to Parents
+            var parentsMissingChild = new NativeList<Entity>(Allocator.TempJob);
+            var findMissingChildJob = new FindMissingChild
+            {
+                UniqueParents = uniqueParents,
+                ChildFromEntity = GetBufferFromEntity<Child>(),
+                ParentsMissingChild = parentsMissingChild
+            };
+            var findMissingChildJobHandle = findMissingChildJob.Schedule();
+            findMissingChildJobHandle.Complete();
 
-                    var filterChangedParentsJob = new FilterChangedParents
-                    {
-                        Chunks = changeParentsChunks,
-                        ChangedParents = changedParents,
-                        ParentType = parentType,
-                        PreviousParentType = previousParentType,
-                        EntityType = entityType
-                    };
-                    var filterChangedParentsJobHandle = filterChangedParentsJob.Schedule();
-                    filterChangedParentsJobHandle.Complete();
+            EntityManager.AddComponent(parentsMissingChild.AsArray(), typeof(Child));
 
-                    for (int i = 0; i < changedParents.Length; i++)
-                    {
-                        var childEntity = changedParents[i].ChildEntity;
-                        var previousParentEntity = changedParents[i].PreviousParentEntity;
-                        var parentEntity = changedParents[i].ParentEntity;
+            // 6. Get Child[] for each unique Parent
+            // 7. Update Child[] for each unique Parent
+            var fixupChangedChildrenJob = new FixupChangedChildren
+            {
+                ParentChildrenToAdd = parentChildrenToAdd,
+                ParentChildrenToRemove = parentChildrenToRemove,
+                UniqueParents = uniqueParents,
+                ChildFromEntity = GetBufferFromEntity<Child>()
+            };
 
-                        RemoveChildFromParent(childEntity, previousParentEntity);
-                        AddChildToParent(childEntity, parentEntity);
-                    }
-                    changedParents.Dispose();
-                }
-                changeParentsChunks.Dispose();
-            }
+            var fixupChangedChildrenJobHandle = fixupChangedChildrenJob.Schedule();
+            fixupChangedChildrenJobHandle.Complete();
+
+            parentChildrenToAdd.Dispose();
+            parentChildrenToRemove.Dispose();
+            uniqueParents.Dispose();
+            parentsMissingChild.Dispose();
         }
 
-        private void UpdateDeletedParents()
+        [BurstCompile]
+        struct GatherChildEntities : IJob
         {
-            using (new ProfilerSample("UpdateDeletedParents"))
+            public NativeArray<Entity> Parents;
+            public NativeList<Entity> Children;
+            public BufferFromEntity<Child> ChildFromEntity;
+
+            public void Execute()
             {
-                if (m_DeletedParentsGroup.CalculateLength() < 1)
-                    return;
-                var previousParents = m_DeletedParentsGroup.ToEntityArray(Allocator.TempJob);
-                for (int i = 0; i < previousParents.Length; i++)
+                for (int i = 0; i < Parents.Length; i++)
                 {
-                    var parentEntity = previousParents[i];
-                    var childEntitiesSource = EntityManager.GetBuffer<UIChild>(parentEntity).AsNativeArray();
-                    var childEntities = new NativeArray<Entity>(childEntitiesSource.Length, Allocator.Temp);
+                    var parentEntity = Parents[i];
+                    var childEntitiesSource = ChildFromEntity[parentEntity].AsNativeArray();
                     for (int j = 0; j < childEntitiesSource.Length; j++)
-                        childEntities[j] = childEntitiesSource[j].Value;
-
-                    for (int j = 0; j < childEntities.Length; j++)
-                    {
-                        var childEntity = childEntities[j];
-
-                        if (!EntityManager.Exists(childEntity))
-                            continue;
-
-                        if (EntityManager.HasComponent(childEntity, typeof(UIParent)))
-                            EntityManager.RemoveComponent(childEntity, typeof(UIParent));
-                        if (EntityManager.HasComponent(childEntity, typeof(UIPreviousParent)))
-                            EntityManager.RemoveComponent(childEntity, typeof(UIPreviousParent));
-                    }
-
-                    childEntities.Dispose();
+                        Children.Add(childEntitiesSource[j].Value);
                 }
-                EntityManager.RemoveComponent(m_DeletedParentsGroup, typeof(UIChild));
-                previousParents.Dispose();
             }
         }
 
-        protected override void OnUpdate()
+        void UpdateDeletedParents()
         {
-            UpdateDeletedParents();
-            UpdateRemoveParents();
+            if (m_DeletedParentsGroup.IsEmptyIgnoreFilter)
+                return;
 
-            UpdateChangeParents();
-            UpdateNewParents();
+            var previousParents = m_DeletedParentsGroup.ToEntityArray(Allocator.TempJob);
+            var childEntities = new NativeList<Entity>(Allocator.TempJob);
+            var gatherChildEntitiesJob = new GatherChildEntities
+            {
+                Parents = previousParents,
+                Children = childEntities,
+                ChildFromEntity = GetBufferFromEntity<Child>()
+            };
+            var gatherChildEntitiesJobHandle = gatherChildEntitiesJob.Schedule();
+            gatherChildEntitiesJobHandle.Complete();
+
+            EntityManager.RemoveComponent(childEntities, typeof(Parent));
+            EntityManager.RemoveComponent(m_DeletedParentsGroup, typeof(Child));
+
+            childEntities.Dispose();
+            previousParents.Dispose();
         }
 
-        //protected override JobHandle OnUpdate(JobHandle inputDeps)
-        //{
-        //    using (new ProfilerSample("ParentSystem.OnUpdate"))
-        //    {
-        //        UpdateDeletedParents();
-        //        UpdateRemoveParents();
+        protected override JobHandle OnUpdate(JobHandle inputDeps)
+        {
+            inputDeps.Complete(); // #todo
 
-        //        UpdateChangeParents();
-        //        UpdateNewParents();
-        //        return inputDeps;
-        //    }
-        //}
+            using(new ProfilerSample("UpdateDeletedParents"))
+                UpdateDeletedParents();
+
+            using (new ProfilerSample("UpdateRemoveParents"))
+                UpdateRemoveParents();
+
+            using (new ProfilerSample("UpdateNewParents"))
+                UpdateNewParents();
+
+            using (new ProfilerSample("UpdateChangeParents"))
+                UpdateChangeParents();
+
+            return new JobHandle();
+        }
     }
 }

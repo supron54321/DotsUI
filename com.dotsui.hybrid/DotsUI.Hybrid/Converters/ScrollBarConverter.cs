@@ -16,14 +16,14 @@ namespace DotsUI.Hybrid
                 ScrollHandle = scrollHandle,
                 ParentScrollRect = rectTransformToEntity[unityComponent.GetComponentInParent<ScrollRect>().transform as UnityEngine.RectTransform]
             });
-            mgr.AddComponentData(scrollHandle, new Controls.ScrollBarHandle()
+            mgr.AddComponentData(entity, new Controls.ScrollBarHandle()
             {
 
             });
-            mgr.AddComponentData(scrollHandle, new Input.PointerInputReceiver()
-            {
-                ListenerTypes = Input.PointerEventType.BeginDrag | Input.PointerEventType.Drag | Input.PointerEventType.EndDrag
-            });
+            var pointerInputReceiver = GetOrAddComponent<Input.PointerInputReceiver>(mgr, entity);
+            pointerInputReceiver.ListenerTypes |= Input.PointerEventType.BeginDrag | Input.PointerEventType.Drag |
+                                                  Input.PointerEventType.EndDrag;
+            mgr.SetComponentData(entity, pointerInputReceiver);
         }
     }
 }

@@ -171,7 +171,7 @@ namespace DotsUI.Core
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            if (m_RootGroup.CalculateLength() < 1)
+            if (m_RootGroup.CalculateEntityCount() < 1)
                 return inputDeps;
 
             inputDeps = UpdateBatchIndices(inputDeps);
