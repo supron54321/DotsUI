@@ -13,6 +13,7 @@ using UnityEngine.Experimental.PlayerLoop;
 #endif
 using UnityEngineInternal.Input;
 using Unity.Entities;
+using Unity.Transforms;
 using RectTransform = DotsUI.Core.RectTransform;
 
 namespace DotsUI.Input
@@ -130,12 +131,12 @@ namespace DotsUI.Input
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<RectTransform>(),
-                    ComponentType.ReadOnly<UIChild>(),
+                    ComponentType.ReadOnly<Child>(),
                     ComponentType.ReadOnly<WorldSpaceRect>(),
                 },
                 None = new ComponentType[]
                 {
-                    typeof(UIParent)
+                    typeof(Parent)
                 },
                 Options = EntityQueryOptions.FilterWriteGroup
             });
@@ -160,9 +161,9 @@ namespace DotsUI.Input
             var pointerFrameData = GatherPointerFrameData(Allocator.TempJob);
             smpl.Dispose();
             NativeArray<Entity> roots = m_RootGroup.ToEntityArray(Allocator.TempJob);
-            var childrenFromEntity = GetBufferFromEntity<UIChild>(true);
+            var childrenFromEntity = GetBufferFromEntity<Child>(true);
             var worldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>(true);
-            var parentFromEntity = GetComponentDataFromEntity<UIParent>(true);
+            var parentFromEntity = GetComponentDataFromEntity<Parent>(true);
             var pointerReceiverFromEntity = GetComponentDataFromEntity<PointerInputReceiver>(true);
 
             var stateComponentFromEntity = GetComponentDataFromEntity<InputSystemState>();

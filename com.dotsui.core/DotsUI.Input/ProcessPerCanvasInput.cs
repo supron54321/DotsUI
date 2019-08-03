@@ -5,6 +5,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Transforms;
 
 namespace DotsUI.Input
 {
@@ -14,7 +15,7 @@ namespace DotsUI.Input
         [ReadOnly] public NativeArray<Entity> Roots;
         [ReadOnly] public ComponentDataFromEntity<WorldSpaceRect> LocalToWorldFromEntity;
         [ReadOnly] public ComponentDataFromEntity<PointerInputReceiver> PointerInputReceiver;
-        [ReadOnly] public BufferFromEntity<UIChild> ChildrenFromEntity;
+        [ReadOnly] public BufferFromEntity<Child> ChildrenFromEntity;
 
         [ReadOnly] public NativeArray<MouseInputFrameData> PointersPosition;
 

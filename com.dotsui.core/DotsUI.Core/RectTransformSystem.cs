@@ -5,6 +5,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
 using System;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace DotsUI.Core
@@ -25,7 +26,7 @@ namespace DotsUI.Core
             public int ScreenHeight;
             [ReadOnly] public ArchetypeChunkComponentType<RectTransform> RectTransformType;
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            [ReadOnly] public ArchetypeChunkBufferType<UIChild> ChildType;
+            [ReadOnly] public ArchetypeChunkBufferType<Child> ChildType;
             [ReadOnly] public ArchetypeChunkComponentType<CanvasConstantPhysicalSizeScaler> ConstantPhysicalScaler;
             [ReadOnly] public ArchetypeChunkComponentType<CanvasConstantPixelSizeScaler> ConstantPixelScaler;
 
@@ -101,13 +102,13 @@ namespace DotsUI.Core
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<RectTransform>(),
-                    ComponentType.ReadOnly<UIChild>(),
+                    ComponentType.ReadOnly<Child>(),
                     ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
                     typeof(WorldSpaceRect),
                 },
                 None = new ComponentType[]
                 {
-                    typeof(UIParent)
+                    typeof(Parent)
                 },
                 Any = new ComponentType[]
                 {
@@ -121,8 +122,8 @@ namespace DotsUI.Core
         {
             var rectTransformType = GetArchetypeChunkComponentType<RectTransform>(true);
             var entityType = GetArchetypeChunkEntityType();
-            var childType = GetArchetypeChunkBufferType<UIChild>(true);
-            var childFromEntity = GetBufferFromEntity<UIChild>(true);
+            var childType = GetArchetypeChunkBufferType<Child>(true);
+            var childFromEntity = GetBufferFromEntity<Child>(true);
             var worldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>();
             var rectTransformFromEntity = GetComponentDataFromEntity<RectTransform>(true);
             var rebuildFlagType = GetComponentDataFromEntity<RebuildElementMeshFlag>();

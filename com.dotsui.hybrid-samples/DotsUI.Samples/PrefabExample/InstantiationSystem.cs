@@ -7,6 +7,7 @@ using DotsUI.Hybrid;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 using RectTransform = UnityEngine.RectTransform;
 
@@ -41,7 +42,7 @@ public class InstantiationSystem : ComponentSystem
                 DotsUI.Core.RectTransform rectTransform = EntityManager.GetComponentData<DotsUI.Core.RectTransform>(entity);
                 rectTransform.Position = new float2(10.0f + j*10.0f, - 10.0f - j*10.0f);
                 EntityManager.SetComponentData(entity, rectTransform);
-                EntityManager.SetComponentData(entity, new UIParent { Value = GetSingletonEntity<WindowCanvasComponent>() });
+                EntityManager.SetComponentData(entity, new Parent { Value = GetSingletonEntity<WindowCanvasComponent>() });
             }
 
         }

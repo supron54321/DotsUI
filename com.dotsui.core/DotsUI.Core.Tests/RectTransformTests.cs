@@ -5,6 +5,7 @@ using NUnit.Framework;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Entities.Tests;
+using Unity.Transforms;
 
 namespace DotsUI.Core.Tests
 {
@@ -19,7 +20,7 @@ namespace DotsUI.Core.Tests
             base.Setup();
 
             m_ChildArchetype = m_Manager.CreateArchetype(ComponentType.ReadWrite<RectTransform>(),
-                ComponentType.ReadWrite<UIParent>());
+                ComponentType.ReadWrite<Parent>());
             m_RootArchetype = m_Manager.CreateArchetype(ComponentType.ReadWrite<RectTransform>(),
                 ComponentType.ReadWrite<WorldSpaceRect>());
         }
@@ -41,17 +42,17 @@ namespace DotsUI.Core.Tests
             var root = m_Manager.CreateEntity(m_RootArchetype);
             var childArchetype = m_Manager.CreateArchetype(ComponentType.ReadWrite<RectTransform>(),
                 ComponentType.ReadWrite<WorldSpaceRect>(),
-                ComponentType.ReadWrite<UIParent>());
+                ComponentType.ReadWrite<Parent>());
             NativeArray<Entity> children = new NativeArray<Entity>(8, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
             m_Manager.CreateEntity(childArchetype, children);
-            m_Manager.SetComponentData(children[0], new UIParent() { Value = root });
-            m_Manager.SetComponentData(children[1], new UIParent() { Value = root });
-            m_Manager.SetComponentData(children[2], new UIParent() { Value = children[1] });
-            m_Manager.SetComponentData(children[3], new UIParent() { Value = children[1] });
-            m_Manager.SetComponentData(children[4], new UIParent() { Value = children[1] });
-            m_Manager.SetComponentData(children[5], new UIParent() { Value = children[4] });
-            m_Manager.SetComponentData(children[6], new UIParent() { Value = children[5] });
-            m_Manager.SetComponentData(children[7], new UIParent() { Value = root });
+            m_Manager.SetComponentData(children[0], new Parent() { Value = root });
+            m_Manager.SetComponentData(children[1], new Parent() { Value = root });
+            m_Manager.SetComponentData(children[2], new Parent() { Value = children[1] });
+            m_Manager.SetComponentData(children[3], new Parent() { Value = children[1] });
+            m_Manager.SetComponentData(children[4], new Parent() { Value = children[1] });
+            m_Manager.SetComponentData(children[5], new Parent() { Value = children[4] });
+            m_Manager.SetComponentData(children[6], new Parent() { Value = children[5] });
+            m_Manager.SetComponentData(children[7], new Parent() { Value = root });
             World.GetOrCreateSystem<ParentSystem>().Update();
             return (root, children);
         }
@@ -61,15 +62,15 @@ namespace DotsUI.Core.Tests
         {
             var (root, children) = CreateInitialHierarchy();
 
-            Assert.AreEqual(3, m_Manager.GetBuffer<UIChild>(root).Length);
-            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<UIChild>(children[0]));
-            Assert.AreEqual(3, m_Manager.GetBuffer<UIChild>(children[1]).Length);
-            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<UIChild>(children[2]));
-            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<UIChild>(children[3]));
-            Assert.AreEqual(1, m_Manager.GetBuffer<UIChild>(children[4]).Length);
-            Assert.AreEqual(1, m_Manager.GetBuffer<UIChild>(children[5]).Length);
-            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<UIChild>(children[6]));
-            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<UIChild>(children[7]));
+            Assert.AreEqual(3, m_Manager.GetBuffer<Child>(root).Length);
+            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<Child>(children[0]));
+            Assert.AreEqual(3, m_Manager.GetBuffer<Child>(children[1]).Length);
+            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<Child>(children[2]));
+            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<Child>(children[3]));
+            Assert.AreEqual(1, m_Manager.GetBuffer<Child>(children[4]).Length);
+            Assert.AreEqual(1, m_Manager.GetBuffer<Child>(children[5]).Length);
+            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<Child>(children[6]));
+            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<Child>(children[7]));
         }
         [Test]
         public void TestParentAdd()
@@ -77,10 +78,10 @@ namespace DotsUI.Core.Tests
             var (root, children) = CreateInitialHierarchy();
 
             var child = m_Manager.CreateEntity(m_ChildArchetype);
-            m_Manager.SetComponentData(child, new UIParent() { Value = children[7] });
+            m_Manager.SetComponentData(child, new Parent() { Value = children[7] });
             World.GetOrCreateSystem<ParentSystem>().Update();
 
-            Assert.AreEqual(child, m_Manager.GetBuffer<UIChild>(children[7])[0].Value);
+            Assert.AreEqual(child, m_Manager.GetBuffer<Child>(children[7])[0].Value);
         }
 
         [Test]
@@ -88,9 +89,9 @@ namespace DotsUI.Core.Tests
         {
             var (root, children) = CreateInitialHierarchy();
 
-            m_Manager.RemoveComponent<UIParent>(children[5]);
+            m_Manager.RemoveComponent<Parent>(children[5]);
             World.GetOrCreateSystem<ParentSystem>().Update();
-            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<UIChild>(children[4]));
+            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<Child>(children[4]));
         }
 
         [Test]
@@ -98,10 +99,10 @@ namespace DotsUI.Core.Tests
         {
             var (root, children) = CreateInitialHierarchy();
 
-            m_Manager.SetComponentData(children[6], new UIParent() { Value = children[4] });
+            m_Manager.SetComponentData(children[6], new Parent() { Value = children[4] });
             World.GetOrCreateSystem<ParentSystem>().Update();
-            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<UIChild>(children[5]));
-            Assert.AreEqual(2, m_Manager.GetBuffer<UIChild>(children[4]).Length);
+            Assert.Throws<ArgumentException>(() => m_Manager.GetBuffer<Child>(children[5]));
+            Assert.AreEqual(2, m_Manager.GetBuffer<Child>(children[4]).Length);
         }
 
         [Test]

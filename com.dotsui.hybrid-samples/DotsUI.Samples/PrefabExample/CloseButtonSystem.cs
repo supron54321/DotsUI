@@ -6,6 +6,7 @@ using Unity.Entities;
 using UnityEngine;
 using DotsUI.Core;
 using Unity.Collections;
+using Unity.Transforms;
 
 [DisableAutoCreation]
 [UpdateInGroup(typeof(UserInputSystemGroup))]
@@ -25,7 +26,7 @@ public class CloseButtonSystem : ComponentSystem
             for (int i = 0; i < closeButtons.Length; i++)
             {
                 // Unfortunately, we have to manually set dirty component
-                var parent = EntityManager.GetComponentData<UIParent>(closeButtons[i].WindowTransform);
+                var parent = EntityManager.GetComponentData<Parent>(closeButtons[i].WindowTransform);
                 EntityManager.DestroyEntity(closeButtons[i].WindowTransform);
                 EntityManager.AddComponent(parent.Value, typeof(DirtyElementFlag));
             }

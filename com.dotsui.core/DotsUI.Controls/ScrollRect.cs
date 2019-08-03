@@ -7,6 +7,11 @@ using Unity.Entities;
 
 namespace DotsUI.Controls
 {
+    public enum ScrollBarAxis
+    {
+        Vertical,
+        Horizontal
+    }
     public struct ScrollRect : IComponentData
     {
         public Entity Content;

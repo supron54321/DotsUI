@@ -7,12 +7,13 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 
 namespace DotsUI.Core
 {
     public struct HierarchyRebuildContext
     {
-        [ReadOnly] public BufferFromEntity<UIChild> ChildrenFromEntity;
+        [ReadOnly] public BufferFromEntity<Child> ChildrenFromEntity;
         [NativeDisableContainerSafetyRestriction]
         public ComponentDataFromEntity<WorldSpaceRect> WorldSpaceRectFromEntity;
         [NativeDisableContainerSafetyRestriction]

@@ -12,6 +12,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Transforms;
 using KeyCode = UnityEngine.KeyCode;    // Avoid whole UnityEngine namespace
 
 namespace DotsUI.Controls
@@ -35,7 +36,7 @@ namespace DotsUI.Controls
 
         protected override void OnCreateManager()
         {
-            m_CaretArchetype = EntityManager.CreateArchetype(typeof(RectTransform), typeof(UIParent), typeof(WorldSpaceRect), typeof(SpriteImage), 
+            m_CaretArchetype = EntityManager.CreateArchetype(typeof(RectTransform), typeof(Parent), typeof(WorldSpaceRect), typeof(SpriteImage), 
                 typeof(ControlVertexData), typeof(ControlVertexIndex), typeof(VertexColorValue), typeof(VertexColorMultiplier),
                 typeof(InputFieldCaret));
 
@@ -182,7 +183,7 @@ namespace DotsUI.Controls
                 {
                     InputFieldEntity = inputFieldEntity
                 });
-                CommandBuff.SetComponent(chunkIdx, caret, new UIParent
+                CommandBuff.SetComponent(chunkIdx, caret, new Parent
                 {
                     Value = inputFieldEntity
                 });
@@ -341,7 +342,7 @@ namespace DotsUI.Controls
                 CaretPosition = EntityManager.GetBuffer<TextData>(focusedEntity).Length,
             });
             m_CaretEntity = EntityManager.CreateEntity(m_CaretArchetype);
-            EntityManager.SetComponentData(m_CaretEntity, new UIParent()
+            EntityManager.SetComponentData(m_CaretEntity, new Parent()
             {
                 Value = focusedEntity
             });

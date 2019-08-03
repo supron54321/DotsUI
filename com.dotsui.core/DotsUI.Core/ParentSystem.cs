@@ -4,10 +4,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using DotsUI.Profiling;
-
-using Child = DotsUI.Core.UIChild;
-using Parent = DotsUI.Core.UIParent;
-using PreviousParent = DotsUI.Core.UIPreviousParent;
+using Unity.Transforms;
 
 namespace DotsUI.Core
 {

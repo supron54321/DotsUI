@@ -7,6 +7,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace DotsUI.Input
@@ -65,7 +66,7 @@ namespace DotsUI.Input
 
         public NativeArray<MouseButtonState> ButtonStates;
         [ReadOnly] public ComponentDataFromEntity<PointerInputReceiver> ReceiverFromEntity;
-        [ReadOnly] public ComponentDataFromEntity<UIParent> ParentFromEntity;
+        [ReadOnly] public ComponentDataFromEntity<Parent> ParentFromEntity;
         public ComponentDataFromEntity<InputSystemState> StateFromEntity;
         [ReadOnly] public float DragThreshold;
 
