@@ -129,12 +129,12 @@ namespace DotsUI.Core
 
         private NativeHashMap<Entity, MaterialInfo> m_EntityToMaterialID;
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
             m_EntityToMaterialID.Dispose();
         }
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             m_EntityToMaterialID = new NativeHashMap<Entity, MaterialInfo>(10000, Allocator.Persistent);
 

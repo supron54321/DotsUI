@@ -11,7 +11,7 @@
 
 ### Changes
 
-* New parent system (updated to match code with Unity.Transforms.ParentSystem)
+* Removed custom parent system. Now DotsUI uses Unity.Transforms
 
 ### Fixes
 * Fixed issue with last few trangles not being rendered arter InputField lost focus

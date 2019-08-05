@@ -63,18 +63,16 @@ namespace DotsUI.Controls
 
                     float2 moveRange = (viewportRect.Size - contentRect.Size);
 
-                    float2 value = (centerDiff + moveRange*0.5f) / moveRange;
-                    Debug.Log(centerDiff + " " + moveRange + " " + value);
+                    float2 value = math.saturate((centerDiff + moveRange*0.5f) / moveRange);
 
-                    // clampContent
 
                     var verticalEntity = scrollRect[i].VerticalBar;
                     if(ScrollBarFromEntity.Exists(verticalEntity))
                         UpdateScrollBar(verticalEntity, contentToViewportRatio, value, ScrollBarAxis.Vertical);
 
-                    //var horizontalEntity = scrollRect[i].HorizontalBar;
-                    //if (ScrollBarFromEntity.Exists(horizontalEntity))
-                    //    UpdateScrollBar(horizontalEntity, contentToViewportRatio, value, ScrollBarAxis.Horizontal);
+                    var horizontalEntity = scrollRect[i].HorizontalBar;
+                    if (ScrollBarFromEntity.Exists(horizontalEntity))
+                        UpdateScrollBar(horizontalEntity, contentToViewportRatio, value, ScrollBarAxis.Horizontal);
 
                     RectTransformUtils.UpdateTransformRecursive(ref scrollRectWorldSpace, WorldSpaceMaskFromEntity[scrollEntity[i]], scrollEntity[i], ElementScaleFromEntity[scrollEntity[i]].Value, ref rebuildContext);
                 }

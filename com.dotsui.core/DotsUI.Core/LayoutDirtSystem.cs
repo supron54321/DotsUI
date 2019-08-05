@@ -16,7 +16,6 @@ using UnityEngine.TextCore;
 namespace DotsUI.Core
 {
     [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))]
-    [UpdateAfter(typeof(ParentSystem))]
     public class LayoutDirtSystem : JobComponentSystem
     {
         [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))][UpdateAfter(typeof(LayoutDirtSystem))]
@@ -75,11 +74,11 @@ namespace DotsUI.Core
         }
         private EntityQuery m_DirtyElements;
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
         }
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             m_Barrier = World.GetOrCreateSystem<SystemBarrier>();
             m_DirtyElements = GetEntityQuery(new EntityQueryDesc

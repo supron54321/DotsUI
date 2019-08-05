@@ -32,6 +32,7 @@ namespace DotsUI.Controls
         {
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public ArchetypeChunkComponentType<ScrollBar> ScrollBarType;
+            [ReadOnly] public ArchetypeChunkComponentType<WorldSpaceRect> ScrollBarRectType;
             [ReadOnly] public NativeHashMap<Entity, Entity> TargetToEvent;
             [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerBufferFromEntity;
 
@@ -39,6 +40,8 @@ namespace DotsUI.Controls
             {
                 var scrollBarArray = chunk.GetNativeArray(ScrollBarType);
                 var entityArray = chunk.GetNativeArray(EntityType);
+                var rectArray = chunk.GetNativeArray(ScrollBarRectType);
+
                 for (int i = 0; i < chunk.Count; i++)
                 {
                     var scrollBar = scrollBarArray[i];

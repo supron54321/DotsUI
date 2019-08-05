@@ -12,7 +12,7 @@ namespace DotsUI.Input
         private EntityQuery m_LostFocusGroup;
         private EntityQuery m_KeyboardGroup;
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             m_PointerGroup = GetEntityQuery(new EntityQueryDesc()
             {

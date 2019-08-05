@@ -34,7 +34,7 @@ namespace DotsUI.Controls
         private NativeHashMap<Entity, Entity> m_TargetToPointerEvent;
         private InputHandleBarrier m_InputSystemBarrier;
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             m_CaretArchetype = EntityManager.CreateArchetype(typeof(RectTransform), typeof(Parent), typeof(WorldSpaceRect), typeof(SpriteImage), 
                 typeof(ControlVertexData), typeof(ControlVertexIndex), typeof(VertexColorValue), typeof(VertexColorMultiplier),
@@ -72,7 +72,7 @@ namespace DotsUI.Controls
             base.OnCreateManager();
         }
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
             m_TargetToKeyboardEvent.Dispose();
             m_TargetToPointerEvent.Dispose();

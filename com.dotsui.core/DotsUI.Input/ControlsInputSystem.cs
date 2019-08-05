@@ -104,7 +104,7 @@ namespace DotsUI.Input
 
         public float DragThreshold { get; set; }
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             DragThreshold = 3.0f;
             m_ButtonStates = new NativeArray<MouseButtonState>(3, Allocator.Persistent);
@@ -148,7 +148,7 @@ namespace DotsUI.Input
             base.OnCreateManager();
         }
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
             m_Touches.Dispose();
             m_ButtonStates.Dispose();

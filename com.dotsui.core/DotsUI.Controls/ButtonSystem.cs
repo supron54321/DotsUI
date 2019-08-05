@@ -18,7 +18,7 @@ namespace DotsUI.Controls
     {
         private EntityQuery m_EventGroup;
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             m_EventGroup = GetEntityQuery(new EntityQueryDesc()
             {
@@ -30,7 +30,7 @@ namespace DotsUI.Controls
             });
         }
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
         }
         [BurstCompile]

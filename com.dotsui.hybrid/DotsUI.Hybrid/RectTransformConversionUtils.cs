@@ -29,9 +29,9 @@ namespace DotsUI.Hybrid
 
         public DotsUIArchetypes(EntityManager manager)
         {
-            CanvasArchetype = manager.CreateArchetype(typeof(RectTransform), typeof(WorldSpaceRect));
+            CanvasArchetype = manager.CreateArchetype(typeof(RectTransform), typeof(LocalToWorld), typeof(WorldSpaceRect));
             GenericChildArchetype =
-                manager.CreateArchetype(typeof(RectTransform), typeof(WorldSpaceRect), typeof(Parent));
+                manager.CreateArchetype(typeof(RectTransform), typeof(LocalToWorld), typeof(LocalToParent), typeof(WorldSpaceRect), typeof(Parent));
         }
     }
 

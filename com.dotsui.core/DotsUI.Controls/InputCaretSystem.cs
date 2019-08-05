@@ -19,7 +19,7 @@ namespace DotsUI.Controls
         private float m_DeltaTime = 0.0f;
         private bool m_Show = false;
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             m_CaretGroup = GetEntityQuery(new EntityQueryDesc()
             {

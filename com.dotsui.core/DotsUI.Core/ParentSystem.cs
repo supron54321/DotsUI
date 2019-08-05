@@ -9,7 +9,7 @@ using Unity.Transforms;
 namespace DotsUI.Core
 {
     [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))]
-    public class ParentSystem : JobComponentSystem
+    abstract public class UIParentSystem : JobComponentSystem
     {
         EntityQuery m_NewParentsGroup;
         EntityQuery m_RemovedParentsGroup;

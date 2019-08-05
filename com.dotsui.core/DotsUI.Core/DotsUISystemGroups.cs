@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Unity.Entities;
+using Unity.Transforms;
 
 namespace DotsUI.Core
 {
@@ -29,6 +30,7 @@ namespace DotsUI.Core
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(UserInputSystemGroup))]
+    [UpdateBefore(typeof(TransformSystemGroup))]
     public class BeforeRectTransformUpdateGroup : ComponentSystemGroup
     {
 
@@ -36,6 +38,7 @@ namespace DotsUI.Core
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(BeforeRectTransformUpdateGroup))]
+    [UpdateAfter(typeof(TransformSystemGroup))]
     public class RectTransformSystemGroup : ComponentSystemGroup
     {
 
