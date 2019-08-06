@@ -62,7 +62,7 @@ namespace DotsUI.Input
 
         [ReadOnly]
         [DeallocateOnJobCompletion]
-        public NativeArray<(NativeInputEventType, PointerButton)> PointerEvents;
+        public NativeArray<NativePointerButtonEvent> PointerEvents;
 
         public NativeArray<MouseButtonState> ButtonStates;
         [ReadOnly] public ComponentDataFromEntity<PointerInputReceiver> ReceiverFromEntity;
@@ -118,7 +118,8 @@ namespace DotsUI.Input
         {
             for (int i = 0; i < PointerEvents.Length; i++)
             {
-                var (eventType, button) = PointerEvents[i];
+                var eventType = PointerEvents[i].EventType;
+                var button = PointerEvents[i].Button;
                 if (eventType == NativeInputEventType.PointerDown)
                 {
                     HandleButtonDown(mouseHit, ref state, button);

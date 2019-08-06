@@ -272,7 +272,7 @@ namespace DotsUI.Input
             return ret;
         }
 
-        private void GatherEvents(Allocator allocator, out NativeArray<(NativeInputEventType, PointerButton)> pointerEventsArray, out NativeArray<NativeKeyboardInputEvent> keyboardEventArray)
+        private void GatherEvents(Allocator allocator, out NativeArray<NativePointerButtonEvent> pointerEventsArray, out NativeArray<NativeKeyboardInputEvent> keyboardEventArray)
         {
             var pointerContainerEntity = GetSingletonEntity<NativePointerInputContainer>();
             var keyboardContainerEntity = GetSingletonEntity<NativeKeyboardInputContainer>();
@@ -280,11 +280,11 @@ namespace DotsUI.Input
             var pointerBuffer = EntityManager.GetBuffer<NativePointerButtonEvent>(pointerContainerEntity);
             var keyboardBuffer = EntityManager.GetBuffer<NativeKeyboardInputEvent>(keyboardContainerEntity);
 
-            pointerEventsArray = new NativeArray<(NativeInputEventType, PointerButton)>(pointerBuffer.Length, allocator);
+            pointerEventsArray = new NativeArray<NativePointerButtonEvent>(pointerBuffer.Length, allocator);
             keyboardEventArray = new NativeArray<NativeKeyboardInputEvent>(keyboardBuffer.Length, allocator);
 
             for (int i = 0; i < pointerBuffer.Length; i++)
-                pointerEventsArray[i] = (pointerBuffer[i].EventType, pointerBuffer[i].Button);
+                pointerEventsArray[i] = pointerBuffer[i];
 
             for (int i = 0; i < keyboardBuffer.Length; i++)
                 keyboardEventArray[i] = keyboardBuffer[i];

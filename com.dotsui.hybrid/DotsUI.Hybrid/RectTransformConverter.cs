@@ -20,6 +20,7 @@ namespace DotsUI.Hybrid
                 {typeof(UnityEngine.UI.InputField), new InputFieldConverter()},
                 {typeof(TMPro.TMP_InputField), new TMPInputFieldConverter()},
                 {typeof(UnityEngine.UI.RectMask2D), new RectMaskConverter() },
+                {typeof(UnityEngine.UI.Mask), new MaskConverter() },
                 {typeof(UnityEngine.UI.Button), new ButtonConverter() },
                 {typeof(UnityEngine.UI.ScrollRect), new ScrollRectConverter()},
                 {typeof(UnityEngine.UI.Scrollbar), new ScrollBarConverter() }

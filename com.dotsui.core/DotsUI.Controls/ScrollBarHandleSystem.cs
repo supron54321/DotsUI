@@ -9,6 +9,7 @@ using DotsUI.Input;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
 
 namespace DotsUI.Controls
 {
@@ -31,10 +32,11 @@ namespace DotsUI.Controls
         struct ScrollBarHandleJob : IJobChunk
         {
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            [ReadOnly] public ArchetypeChunkComponentType<ScrollBar> ScrollBarType;
+            public ArchetypeChunkComponentType<ScrollBar> ScrollBarType;
             [ReadOnly] public ArchetypeChunkComponentType<WorldSpaceRect> ScrollBarRectType;
             [ReadOnly] public NativeHashMap<Entity, Entity> TargetToEvent;
             [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerBufferFromEntity;
+            [ReadOnly] public ComponentDataFromEntity<ScrollRect> ScrollRectFromEntity;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
@@ -49,15 +51,30 @@ namespace DotsUI.Controls
                     {
                         var pointerBuff = PointerBufferFromEntity[eventEntity];
                         for (int j = 0; j < pointerBuff.Length; j++)
-                            HandleInputEvent(scrollBar, pointerBuff[j]);
+                            scrollBarArray[i] = HandleInputEvent(entityArray[i], scrollBar, pointerBuff[j]);
                     }
                 }
             }
 
-            private void HandleInputEvent(ScrollBar scrollBar, PointerInputBuffer pointerInput)
+            private ScrollBar HandleInputEvent(Entity scrollBarEntity, ScrollBar scrollBar, PointerInputBuffer pointerInput)
             {
                 if(pointerInput.EventType == PointerEventType.Drag)
-                    UnityEngine.Debug.Log($"{pointerInput.EventType} Handle entity: {scrollBar.ScrollHandle}, dragDelta: {pointerInput.EventData.Delta}");
+                {
+                    UnityEngine.Debug.Log(
+                        $"{pointerInput.EventType} Handle entity: {scrollBar.ScrollHandle}, dragDelta: {pointerInput.EventData.Delta}");
+                    var scrollRect = ScrollRectFromEntity[scrollBar.ParentScrollRect];
+                    if (scrollRect.HorizontalBar == scrollBarEntity)
+                    {
+                        scrollBar.Value = math.saturate(scrollBar.Value + pointerInput.EventData.Delta.x * scrollBar.DragSensitivity);
+                    }
+                    else if (scrollRect.VerticalBar == scrollBarEntity)
+                    {
+                        scrollBar.Value = math.saturate(scrollBar.Value + pointerInput.EventData.Delta.y * scrollBar.DragSensitivity);
+                    }
+
+                }
+
+                return scrollBar;
             }
         }
 
@@ -66,9 +83,11 @@ namespace DotsUI.Controls
             ScrollBarHandleJob scrollBarJob = new ScrollBarHandleJob()
             {
                 EntityType = GetArchetypeChunkEntityType(),
-                ScrollBarType = GetArchetypeChunkComponentType<ScrollBar>(true),
+                ScrollBarType = GetArchetypeChunkComponentType<ScrollBar>(),
                 TargetToEvent = targetToEvent,
                 PointerBufferFromEntity = pointerBufferFromEntity,
+                ScrollBarRectType = GetArchetypeChunkComponentType<WorldSpaceRect>(true),
+                ScrollRectFromEntity = GetComponentDataFromEntity<ScrollRect>(true)
             };
             inputDeps = scrollBarJob.Schedule(m_ScrollBarQuery, inputDeps);
             return inputDeps;
