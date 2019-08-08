@@ -152,7 +152,6 @@ namespace DotsUI.Core
 
             };
             var updateHierarchyJobHandle = updateHierarchyJob.Schedule(m_Group, inputDeps);
-            updateHierarchyJobHandle.Complete();
             return updateHierarchyJobHandle;
         }
     }

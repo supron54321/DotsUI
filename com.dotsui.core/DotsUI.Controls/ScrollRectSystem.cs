@@ -7,6 +7,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using DotsUI.Core;
+using Unity.Burst;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
@@ -23,6 +24,8 @@ namespace DotsUI.Controls
         {
             m_ScrollRectQuery = GetEntityQuery(ComponentType.ReadOnly<ScrollRect>(), ComponentType.ReadWrite<WorldSpaceRect>());
         }
+
+        [BurstCompile]
         struct UpdateScrollRectData : IJobChunk
         {
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
@@ -60,12 +63,6 @@ namespace DotsUI.Controls
                     var viewportRect = WorldSpaceRectFromEntity[scrollRect[i].Viewport];
 
                     var contentToViewportRatio = viewportRect.Size / contentRect.Size;
-                    var centerDiff = contentRect.Center - viewportRect.Center;
-
-                    //float2 moveRange = (viewportRect.Size - contentRect.Size);
-
-                    //float2 value = math.saturate((centerDiff + moveRange*0.5f) / moveRange);
-
 
                     var verticalEntity = scrollRect[i].VerticalBar;
                     if(ScrollBarFromEntity.Exists(verticalEntity))
@@ -82,8 +79,20 @@ namespace DotsUI.Controls
                     var newContentTransform = RectTransformUtils.CalculateInverseTransformWithAnchors(contentRect,
                         viewportRect, contentTransform, ElementScaleFromEntity[scrollRect[i].Content].Value);
                     RectTransformFromEntity[scrollRect[i].Content] = newContentTransform;
-                    RectTransformUtils.UpdateTransformRecursive(ref scrollRectWorldSpace, WorldSpaceMaskFromEntity[scrollEntity[i]], scrollEntity[i], ElementScaleFromEntity[scrollEntity[i]].Value, ref rebuildContext);
+                    rebuildContext = UpdateScrollRectTransform(scrollEntity[i], scrollRectWorldSpace, rebuildContext);
                 }
+            }
+
+            private HierarchyRebuildContext UpdateScrollRectTransform(Entity scrollEntity,
+                WorldSpaceRect scrollRectWorldSpace, HierarchyRebuildContext rebuildContext)
+            {
+                var children = ChildrenFromEntity[scrollEntity];
+                var scrollMask = WorldSpaceMaskFromEntity[scrollEntity];
+                var scale = ElementScaleFromEntity[scrollEntity].Value;
+                for (int j = 0; j < children.Length; j++)
+                    RectTransformUtils.UpdateTransformRecursive(ref scrollRectWorldSpace, scrollMask, children[j].Value, scale,
+                        ref rebuildContext);
+                return rebuildContext;
             }
 
             private WorldSpaceRect UpdateScrollBar(Entity scrollBarEntity, float2 contentToViewportRatio,
