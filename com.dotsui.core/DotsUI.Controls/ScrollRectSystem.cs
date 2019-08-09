@@ -60,6 +60,7 @@ namespace DotsUI.Controls
                     var contentTransform = RectTransformFromEntity[scrollRect[i].Content];
                     var scrollRectWorldSpace = WorldSpaceRectFromEntity[scrollEntity[i]];
                     var contentRect = WorldSpaceRectFromEntity[scrollRect[i].Content];
+                    var oldContentRect = contentRect;
                     var viewportRect = WorldSpaceRectFromEntity[scrollRect[i].Viewport];
 
                     var contentToViewportRatio = viewportRect.Size / contentRect.Size;
@@ -76,11 +77,20 @@ namespace DotsUI.Controls
                         contentRect = UpdateScrollBar(horizontalEntity, contentToViewportRatio, viewportRect, contentRect, ScrollBarAxis.Horizontal);
                     }
 
-                    var newContentTransform = RectTransformUtils.CalculateInverseTransformWithAnchors(contentRect,
-                        viewportRect, contentTransform, ElementScaleFromEntity[scrollRect[i].Content].Value);
-                    RectTransformFromEntity[scrollRect[i].Content] = newContentTransform;
-                    rebuildContext = UpdateScrollRectTransform(scrollEntity[i], scrollRectWorldSpace, rebuildContext);
+                    if (NeedUpdate(oldContentRect, contentRect))
+                    {
+                        var newContentTransform = RectTransformUtils.CalculateInverseTransformWithAnchors(contentRect,
+                            viewportRect, contentTransform, ElementScaleFromEntity[scrollRect[i].Content].Value);
+                        RectTransformFromEntity[scrollRect[i].Content] = newContentTransform;
+                        rebuildContext = UpdateScrollRectTransform(scrollEntity[i], scrollRectWorldSpace, rebuildContext);
+                    }
                 }
+            }
+
+            private bool NeedUpdate(WorldSpaceRect oldContentRect, WorldSpaceRect contentRect)
+            {
+                return math.distance(oldContentRect.Min, contentRect.Min) > 0.5f ||
+                       math.distance(oldContentRect.Max, contentRect.Max) > 0.5f;
             }
 
             private HierarchyRebuildContext UpdateScrollRectTransform(Entity scrollEntity,

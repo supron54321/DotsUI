@@ -14,7 +14,8 @@ namespace DotsUI.Hybrid
             var scrollHandle = rectTransformToEntity[unityComponent.handleRect];
             mgr.AddComponentData(entity, new DotsUI.Controls.ScrollBar(){
                 ScrollHandle = scrollHandle,
-                ParentScrollRect = rectTransformToEntity[unityComponent.GetComponentInParent<ScrollRect>().transform as UnityEngine.RectTransform]
+                Value = unityComponent.value,
+                ParentScrollRect = rectTransformToEntity[unityComponent.GetComponentsInParent<ScrollRect>(true)[0].transform as UnityEngine.RectTransform]  // temporary workaround for inactive transforms
             });
             mgr.AddComponentData(entity, new Controls.ScrollBarHandle()
             {
