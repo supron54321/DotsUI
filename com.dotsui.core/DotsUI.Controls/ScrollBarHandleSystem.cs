@@ -124,6 +124,7 @@ namespace DotsUI.Controls
             };
             inputDeps = rebuildJob.Schedule(inputDeps);
             m_Barrier.AddJobHandleForProducer(inputDeps);
+            inputDeps = markForRebuild.Dispose(inputDeps);
             return inputDeps;
         }
     }

@@ -18,6 +18,8 @@ namespace DotsUI.Controls
         public Entity Viewport;
         public Entity VerticalBar;
         public Entity HorizontalBar;
+        public float VerticalBarSpacing;
+        public float HorizontalBarSpacing;
     }
 
     public struct ScrollRectData : IComponentData

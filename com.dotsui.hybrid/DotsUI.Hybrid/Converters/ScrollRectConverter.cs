@@ -17,6 +17,8 @@ namespace DotsUI.Hybrid
                 Viewport = rectTransformToEntity[unityComponent.viewport],
                 HorizontalBar = rectTransformToEntity[unityComponent.horizontalScrollbar.transform as UnityEngine.RectTransform],
                 VerticalBar = rectTransformToEntity[unityComponent.verticalScrollbar.transform as UnityEngine.RectTransform],
+                HorizontalBarSpacing = unityComponent.horizontalScrollbarSpacing,
+                VerticalBarSpacing = unityComponent.verticalScrollbarSpacing
             });
         }
     }

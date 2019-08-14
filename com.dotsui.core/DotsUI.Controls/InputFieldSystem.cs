@@ -259,7 +259,7 @@ namespace DotsUI.Controls
         {
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public ArchetypeChunkComponentType<KeyboardEvent> KbdEventType;
-            [WriteOnly] public NativeHashMap<Entity, Entity>.Concurrent TargetToEvent;
+            [WriteOnly] public NativeHashMap<Entity, Entity>.ParallelWriter TargetToEvent;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
@@ -276,7 +276,7 @@ namespace DotsUI.Controls
         {
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public ArchetypeChunkComponentType<PointerEvent> PointerEventType;
-            [WriteOnly] public NativeHashMap<Entity, Entity>.Concurrent TargetToEvent;
+            [WriteOnly] public NativeHashMap<Entity, Entity>.ParallelWriter TargetToEvent;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
@@ -303,14 +303,14 @@ namespace DotsUI.Controls
                     {
                         EntityType = entityType,
                         KbdEventType = GetArchetypeChunkComponentType<KeyboardEvent>(true),
-                        TargetToEvent = m_TargetToKeyboardEvent.ToConcurrent()
+                        TargetToEvent = m_TargetToKeyboardEvent.AsParallelWriter()
                     };
                     inputDeps = createTargetToKeyboardEvent.Schedule(m_KeyboardEventGroup, inputDeps);
                     CreateTargetToPointerEvent createTargetToPointerEvent = new CreateTargetToPointerEvent()
                     {
                         EntityType = entityType,
                         PointerEventType = GetArchetypeChunkComponentType<PointerEvent>(true),
-                        TargetToEvent = m_TargetToPointerEvent.ToConcurrent()
+                        TargetToEvent = m_TargetToPointerEvent.AsParallelWriter()
                     };
                     inputDeps = createTargetToPointerEvent.Schedule(m_PointerEventGroup, inputDeps);
                     EventProcessor inputEventProcessor = new EventProcessor()

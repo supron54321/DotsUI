@@ -16,7 +16,6 @@ namespace DotsUI.Input
         private EntityQuery m_SelectableGroup;
         // NativeHashMap is the best option since it checks if entity was already added to list and supports parallel writing.
         // Unfortunately it doesn't support deallocation on job completion. We need persistent container to keep updated entities
-        private NativeHashMap<Entity, int> m_ToUpdateQueue;
 
         protected override void OnCreateInput()
         {
@@ -30,30 +29,10 @@ namespace DotsUI.Input
                 }
             });
             RequireForUpdate(m_SelectableGroup);
-            m_ToUpdateQueue = new NativeHashMap<Entity, int>(2000, Allocator.Persistent);
         }
 
         protected override void OnDestroyInput()
         {
-            m_ToUpdateQueue.Dispose();
-        }
-
-        [BurstCompile]
-        struct CreateTargetToEventMap : IJobChunk
-        {
-            [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            [ReadOnly] public ArchetypeChunkComponentType<PointerEvent> EventType;
-            [WriteOnly] public NativeHashMap<Entity, Entity>.Concurrent TargetToEvent;
-
-            public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
-            {
-                var entityArray = chunk.GetNativeArray(EntityType);
-                var eventArray = chunk.GetNativeArray(EventType);
-                for (int i = 0; i < chunk.Count; i++)
-                {
-                    TargetToEvent.TryAdd(eventArray[i].Target, entityArray[i]);
-                }
-            }
         }
 
         [BurstCompile]
@@ -67,7 +46,7 @@ namespace DotsUI.Input
 
             // This is probably not the best idea to disable this restriction, since different selecatables can point to the same target
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<VertexColorMultiplier> ColorMultiplierFromEntity;
-            public NativeHashMap<Entity, int>.Concurrent ToUpdate;
+            public NativeHashMap<Entity, int>.ParallelWriter ToUpdate;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
@@ -155,11 +134,8 @@ namespace DotsUI.Input
             var selectableColorType = GetArchetypeChunkComponentType<SelectableColor>(true);
             var selectableType = GetArchetypeChunkComponentType<Selectable>();
             var entityType = GetArchetypeChunkEntityType();
-            ClearHashMap<Entity, int> clearContainers = new ClearHashMap<Entity, int>()
-            {
-                Container = m_ToUpdateQueue
-            };
-            inputDeps = clearContainers.Schedule(inputDeps);
+
+            NativeHashMap<Entity, int> updateQueue = new NativeHashMap<Entity, int>(m_SelectableGroup.CalculateEntityCount(), Allocator.TempJob);
 
             SetColorValueJob setJob = new SetColorValueJob()
             {
@@ -169,18 +145,18 @@ namespace DotsUI.Input
                 EntityType = entityType,
                 PointerInputType = pointerBufferFromEntity,
                 TargetToEvent = targetToEvent,
-                ToUpdate = m_ToUpdateQueue.ToConcurrent(),
+                ToUpdate = updateQueue.AsParallelWriter(),
             };
             inputDeps = setJob.Schedule(m_SelectableGroup, inputDeps);
             UpdateColorArray updateJob = new UpdateColorArray()
             {
                 CommandBuffer = World.GetOrCreateSystem<InputHandleBarrier>().CreateCommandBuffer(),
-                EntityQueue = m_ToUpdateQueue
+                EntityQueue = updateQueue
             };
 
             inputDeps = updateJob.Schedule(inputDeps);
             World.GetOrCreateSystem<InputHandleBarrier>().AddJobHandleForProducer(inputDeps);
-
+            inputDeps = updateQueue.Dispose(inputDeps);
             return inputDeps;
         }
     }

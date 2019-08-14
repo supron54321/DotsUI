@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Unity.Collections;
@@ -25,6 +26,20 @@ namespace DotsUI.Controls
             m_ScrollRectQuery = GetEntityQuery(ComponentType.ReadOnly<ScrollRect>(), ComponentType.ReadWrite<WorldSpaceRect>());
         }
 
+        struct ScrollViewTransforms
+        {
+            public RectTransform ContentTransform;
+            public RectTransform ViewportTransform;
+            public WorldSpaceRect ScrollViewRect;
+            public WorldSpaceRect ContentRect;
+            public WorldSpaceRect ViewportRect;
+
+            public RectTransform VerticalAreaTransform;
+            public RectTransform VerticalHandleTransform;
+            public RectTransform HorizontalAreaTransform;
+            public RectTransform HorizontalHandleTransform;
+        }
+
         [BurstCompile]
         struct UpdateScrollRectData : IJobChunk
         {
@@ -35,7 +50,7 @@ namespace DotsUI.Controls
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<WorldSpaceRect> WorldSpaceRectFromEntity;
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<RectTransform> RectTransformFromEntity;
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<ScrollBar> ScrollBarFromEntity;
-            [NativeDisableParallelForRestriction] public BufferFromEntity<Child> ChildrenFromEntity;
+            [ReadOnly] public BufferFromEntity<Child> ChildrenFromEntity;
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<RebuildElementMeshFlag> RebuildFlagFromEntity;
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<ElementScale> ElementScaleFromEntity;
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<WorldSpaceMask> WorldSpaceMaskFromEntity;
@@ -57,34 +72,60 @@ namespace DotsUI.Controls
                 };
                 for (int i = 0; i < scrollRect.Length; i++)
                 {
-                    var contentTransform = RectTransformFromEntity[scrollRect[i].Content];
-                    var scrollRectWorldSpace = WorldSpaceRectFromEntity[scrollEntity[i]];
-                    var contentRect = WorldSpaceRectFromEntity[scrollRect[i].Content];
-                    var oldContentRect = contentRect;
-                    var viewportRect = WorldSpaceRectFromEntity[scrollRect[i].Viewport];
+                    ScrollViewTransforms transforms = GatherTransforms(scrollEntity[i], scrollRect[i]);
+                    var oldContentRect = transforms.ContentRect;
 
-                    var contentToViewportRatio = viewportRect.Size / contentRect.Size;
+                    var contentToViewportRatio = transforms.ViewportRect.Size / transforms.ContentRect.Size;
+
+                    transforms.ViewportTransform.AnchorMin = new float2(0.0f, 0.0f);
+                    transforms.ViewportTransform.AnchorMax = new float2(1.0f, 1.0f);
+                    transforms.ViewportTransform.SizeDelta = new float2(-transforms.VerticalAreaTransform.SizeDelta.x-scrollRect[i].VerticalBarSpacing, -transforms.HorizontalAreaTransform.SizeDelta.y-scrollRect[i].HorizontalBarSpacing);
+
+                    transforms.ViewportRect = RectTransformUtils.CalculateWorldSpaceRect(transforms.ScrollViewRect,
+                        ElementScaleFromEntity[scrollEntity[i]].Value, transforms.ViewportTransform);
+
+                    RectTransformFromEntity[scrollRect[i].Viewport] = transforms.ViewportTransform;
 
                     var verticalEntity = scrollRect[i].VerticalBar;
                     if(ScrollBarFromEntity.Exists(verticalEntity))
                     {
-                        contentRect = UpdateScrollBar(verticalEntity, contentToViewportRatio, viewportRect, contentRect, ScrollBarAxis.Vertical);
+                        UpdateScrollBar(verticalEntity, contentToViewportRatio, ref transforms, ScrollBarAxis.Vertical);
                     }
 
                     var horizontalEntity = scrollRect[i].HorizontalBar;
                     if (ScrollBarFromEntity.Exists(horizontalEntity))
                     {
-                        contentRect = UpdateScrollBar(horizontalEntity, contentToViewportRatio, viewportRect, contentRect, ScrollBarAxis.Horizontal);
+                        UpdateScrollBar(horizontalEntity, contentToViewportRatio, ref transforms, ScrollBarAxis.Horizontal);
                     }
 
-                    if (NeedUpdate(oldContentRect, contentRect))
+                    if (NeedUpdate(oldContentRect, transforms.ContentRect))
                     {
-                        var newContentTransform = RectTransformUtils.CalculateInverseTransformWithAnchors(contentRect,
-                            viewportRect, contentTransform, ElementScaleFromEntity[scrollRect[i].Content].Value);
+                        var newContentTransform = RectTransformUtils.CalculateInverseTransformWithAnchors(transforms.ContentRect,
+                            transforms.ViewportRect, transforms.ContentTransform, ElementScaleFromEntity[scrollRect[i].Content].Value);
                         RectTransformFromEntity[scrollRect[i].Content] = newContentTransform;
-                        rebuildContext = UpdateScrollRectTransform(scrollEntity[i], scrollRectWorldSpace, rebuildContext);
+                        UpdateScrollRectTransform(scrollEntity[i], transforms.ScrollViewRect, rebuildContext);
                     }
                 }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private ScrollViewTransforms GatherTransforms(Entity scrollRectEntity, ScrollRect scrollRect)
+            {
+                var verticalBar = ScrollBarFromEntity[scrollRect.VerticalBar];
+                var horizontalBar = ScrollBarFromEntity[scrollRect.HorizontalBar];
+                return new ScrollViewTransforms
+                {
+                    ContentTransform = RectTransformFromEntity[scrollRect.Content],
+                    ViewportTransform = RectTransformFromEntity[scrollRect.Viewport],
+                    ScrollViewRect = WorldSpaceRectFromEntity[scrollRectEntity],
+                    ContentRect = WorldSpaceRectFromEntity[scrollRect.Content],
+                    ViewportRect = WorldSpaceRectFromEntity[scrollRect.Viewport],
+
+                    VerticalAreaTransform = RectTransformFromEntity[scrollRect.VerticalBar],
+                    VerticalHandleTransform = RectTransformFromEntity[verticalBar.ScrollHandle],
+                    HorizontalAreaTransform = RectTransformFromEntity[scrollRect.HorizontalBar],
+                    HorizontalHandleTransform = RectTransformFromEntity[horizontalBar.ScrollHandle],
+                };
             }
 
             private bool NeedUpdate(WorldSpaceRect oldContentRect, WorldSpaceRect contentRect)
@@ -93,7 +134,7 @@ namespace DotsUI.Controls
                        math.distance(oldContentRect.Max, contentRect.Max) > 0.5f;
             }
 
-            private HierarchyRebuildContext UpdateScrollRectTransform(Entity scrollEntity,
+            private void UpdateScrollRectTransform(Entity scrollEntity,
                 WorldSpaceRect scrollRectWorldSpace, HierarchyRebuildContext rebuildContext)
             {
                 var children = ChildrenFromEntity[scrollEntity];
@@ -102,47 +143,61 @@ namespace DotsUI.Controls
                 for (int j = 0; j < children.Length; j++)
                     RectTransformUtils.UpdateTransformRecursive(ref scrollRectWorldSpace, scrollMask, children[j].Value, scale,
                         ref rebuildContext);
-                return rebuildContext;
             }
 
-            private WorldSpaceRect UpdateScrollBar(Entity scrollBarEntity, float2 contentToViewportRatio,
-                WorldSpaceRect viewportRect, WorldSpaceRect contentRect, ScrollBarAxis axis)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private void UpdateScrollBar(Entity scrollBarEntity, float2 contentToViewportRatio, ref ScrollViewTransforms transforms, ScrollBarAxis axis)
             {
                 var scrollBar = ScrollBarFromEntity[scrollBarEntity];
-                var areaRect = WorldSpaceRectFromEntity[scrollBarEntity];
+                var areaTransform = RectTransformFromEntity[scrollBarEntity];
                 var handleTransform = RectTransformFromEntity[scrollBar.ScrollHandle];
 
                 var scrollBarSize = math.saturate(contentToViewportRatio);
-                float2 moveRange = (viewportRect.Size - contentRect.Size);
-                float2 contentSize = contentRect.Size;
+                float2 moveRange = (transforms.ViewportRect.Size - transforms.ContentRect.Size);
+                float2 contentSize = transforms.ContentRect.Size;
 
                 if (axis == ScrollBarAxis.Vertical)
                 {
+                    areaTransform.AnchorMin = new float2(areaTransform.AnchorMin.x, 0.0f);
+                    areaTransform.AnchorMax = new float2(areaTransform.AnchorMax.x, 1.0f);
+                    areaTransform.Pivot = new float2(1.0f, 1.0f);
+                    areaTransform.SizeDelta = new float2(areaTransform.SizeDelta.x, -(areaTransform.SizeDelta.x - 3.0f));
+
+                    var areaRect = RectTransformUtils.CalculateWorldSpaceRect(transforms.ScrollViewRect,
+                        ElementScaleFromEntity[scrollBarEntity].Value, areaTransform);
+
                     handleTransform.AnchorMin = new float2(0.0f, scrollBar.Value * (1.0f - scrollBarSize.y));
                     handleTransform.AnchorMax =
                         new float2(1.0f, handleTransform.AnchorMin.y + scrollBarSize.y);
                     WorldSpaceRect handleRect = RectTransformUtils.CalculateWorldSpaceRect(areaRect, ElementScaleFromEntity[scrollBarEntity].Value,
                         handleTransform);
                     scrollBar.DragSensitivity = 1.0f / (areaRect.Size.y - handleRect.Size.y);
-                    contentRect.Min.y = viewportRect.Min.y + scrollBar.Value * moveRange.y;
-                    contentRect.Max.y = contentRect.Min.y + contentSize.y;
+                    transforms.ContentRect.Min.y = transforms.ViewportRect.Min.y + scrollBar.Value * moveRange.y;
+                    transforms.ContentRect.Max.y = transforms.ContentRect.Min.y + contentSize.y;
                 }
                 else
                 {
+                    areaTransform.AnchorMin = new float2(0.0f, areaTransform.AnchorMin.y);
+                    areaTransform.AnchorMax = new float2(1.0f, areaTransform.AnchorMax.y);
+                    areaTransform.Pivot = new float2(0.0f, 0.0f);
+                    areaTransform.SizeDelta = new float2(-(areaTransform.SizeDelta.y - 3.0f), areaTransform.SizeDelta.y);
+
+                    var areaRect = RectTransformUtils.CalculateWorldSpaceRect(transforms.ScrollViewRect,
+                        ElementScaleFromEntity[scrollBarEntity].Value, areaTransform);
+
                     handleTransform.AnchorMin = new float2(scrollBar.Value * (1.0f - scrollBarSize.x), 0.0f);
                     handleTransform.AnchorMax =
                         new float2(handleTransform.AnchorMin.x + scrollBarSize.x, 1.0f);
                     WorldSpaceRect handleRect = RectTransformUtils.CalculateWorldSpaceRect(areaRect, ElementScaleFromEntity[scrollBarEntity].Value,
                         handleTransform);
                     scrollBar.DragSensitivity = 1.0f / (areaRect.Size.x - handleRect.Size.x);
-                    contentRect.Min.x = viewportRect.Min.x + scrollBar.Value * moveRange.x;
-                    contentRect.Max.x = contentRect.Min.x + contentSize.x;
+                    transforms.ContentRect.Min.x = transforms.ViewportRect.Min.x + scrollBar.Value * moveRange.x;
+                    transforms.ContentRect.Max.x = transforms.ContentRect.Min.x + contentSize.x;
                 }
 
                 ScrollBarFromEntity[scrollBarEntity] = scrollBar;
                 RectTransformFromEntity[scrollBar.ScrollHandle] = handleTransform;
-
-                return contentRect;
+                RectTransformFromEntity[scrollBarEntity] = areaTransform;
             }
         }
 
@@ -161,7 +216,7 @@ namespace DotsUI.Controls
                 RebuildFlagFromEntity = GetComponentDataFromEntity<RebuildElementMeshFlag>(),
                 ElementScaleFromEntity = GetComponentDataFromEntity<ElementScale>(),
                 WorldSpaceMaskFromEntity = GetComponentDataFromEntity<WorldSpaceMask>(),
-                RectMaskFromEntity = GetComponentDataFromEntity<RectMask>(),
+                RectMaskFromEntity = GetComponentDataFromEntity<RectMask>(true),
             };
             inputDeps = updateJob.Schedule(m_ScrollRectQuery, inputDeps);
             return inputDeps;

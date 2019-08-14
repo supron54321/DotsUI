@@ -17,16 +17,16 @@ namespace DotsUI.Hybrid{
         }
         abstract protected void ConvertComponent(T unityComponent, Entity entity, RectTransformToEntity rectTransformToEntity, Dictionary<UnityEngine.Object, Entity> assetToEntity, EntityManager mgr);
 
-        protected T GetOrAddComponent<T>(EntityManager mgr, Entity entity) where T : struct, IComponentData
+        protected TComponent GetOrAddComponent<TComponent>(EntityManager mgr, Entity entity) where TComponent : struct, IComponentData
         {
-            if (mgr.HasComponent<T>(entity))
-                return mgr.GetComponentData<T>(entity);
-            mgr.AddComponent<T>(entity);
+            if (mgr.HasComponent<TComponent>(entity))
+                return mgr.GetComponentData<TComponent>(entity);
+            mgr.AddComponent<TComponent>(entity);
             return default;
         }
-        protected void SetOrAddComponentData<T>(EntityManager mgr, Entity entity, T value) where T : struct, IComponentData
+        protected void SetOrAddComponentData<TComponent>(EntityManager mgr, Entity entity, TComponent value) where TComponent : struct, IComponentData
         {
-            if(mgr.HasComponent<T>(entity))
+            if(mgr.HasComponent<TComponent>(entity))
                 mgr.SetComponentData(entity, value);
             else
                 mgr.AddComponentData(entity, value);
