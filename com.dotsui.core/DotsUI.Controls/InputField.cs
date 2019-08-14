@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Unity.Entities;
 
 [assembly: InternalsVisibleTo("DotsUI.Hybrid")]
+[assembly: InternalsVisibleTo("DotsUI.Hybrid.Tests")]
+[assembly: InternalsVisibleTo("DotsUI.Controls.Tests")]
 
 namespace DotsUI.Controls
 {

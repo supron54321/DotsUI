@@ -22,11 +22,6 @@ namespace DotsUI.Controls
         public float HorizontalBarSpacing;
     }
 
-    public struct ScrollRectData : IComponentData
-    {
-
-    }
-
     public struct ScrollBar : IComponentData
     {
         public Entity ScrollHandle;
