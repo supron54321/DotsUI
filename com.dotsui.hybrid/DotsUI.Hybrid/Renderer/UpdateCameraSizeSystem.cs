@@ -22,7 +22,7 @@ namespace DotsUI.Hybrid
                 All = new[]
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
-                    ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
+                    //ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
                     ComponentType.ReadWrite<CanvasScreenSize>(),
                 }
             });
@@ -34,15 +34,31 @@ namespace DotsUI.Hybrid
             {
                 var cameraType = GetArchetypeChunkSharedComponentType<CanvasTargetCamera>();
                 var sizeType = GetArchetypeChunkComponentType<CanvasScreenSize>();
+                var entityType = GetArchetypeChunkEntityType();
+                NativeQueue<Entity> commandBuffer = new NativeQueue<Entity>(Allocator.Temp);
                 foreach (var chunk in chunkArray)
                 {
                     var camera = chunk.GetSharedComponentData(cameraType, EntityManager);
+
                     var canvasSize = new CanvasScreenSize()
                     {
-                        Value = new float2(camera.Target.UnityCamera.pixelWidth, camera.Target.UnityCamera.pixelHeight)
+                        Value = new int2(camera.Target.UnityCamera.pixelWidth, camera.Target.UnityCamera.pixelHeight)
                     };
-                    chunk.SetChunkComponentData(sizeType, canvasSize);
+
+                    var sizeArray = chunk.GetNativeArray(sizeType);
+                    var entityArray = chunk.GetNativeArray(entityType);
+                    for (int i = 0; i < sizeArray.Length; i++)
+                    {
+                        if (!sizeArray[i].Value.Equals(canvasSize.Value))
+                        {
+                            commandBuffer.Enqueue(entityArray[i]);
+                            sizeArray[i] = canvasSize;
+                        }
+                    }
+                    //chunk.SetChunkComponentData(sizeType, canvasSize);
                 }
+                while(commandBuffer.TryDequeue(out var entity))
+                    EntityManager.AddComponent<RebuildCanvasHierarchyFlag>(entity);
             }
         }
     }

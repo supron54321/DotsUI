@@ -16,7 +16,7 @@ using UnityEngine.Rendering;
 namespace DotsUI.Hybrid
 {
     [UpdateInGroup(typeof(RenderSystemGroup))]
-    class LegacyRenderSystem : ComponentSystem
+    class HybridRenderSystem : ComponentSystem
     {
         private EntityQuery m_UpdateMeshAndCommandBufferGroup;
         private EntityQuery m_UpdateVerticesOnlyGroup;

@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Entities;
 using DotsUI.Core;
 using DotsUI.Hybrid;
+using Unity.Mathematics;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 
@@ -27,12 +28,17 @@ namespace DotsUI.Hybrid{
                 throw new InvalidOperationException($"Canvas ({unityComponent}) render mode ({unityComponent.renderMode}) is not supported yet");
             if(unityComponent.worldCamera == null)
                 throw new InvalidOperationException($"Target camera is null or destroyed. Canvas {unityComponent}");
-            var proxy = unityComponent.worldCamera.GetComponent<CameraImageRenderProxy>();
+            var camera = unityComponent.worldCamera;
+            var proxy = camera.GetComponent<CameraImageRenderProxy>();
             if (proxy == null)
-                proxy = unityComponent.worldCamera.gameObject.AddComponent<CameraImageRenderProxy>();
+                proxy = camera.gameObject.AddComponent<CameraImageRenderProxy>();
             commandBuffer.AddSharedComponentData(entity, new CanvasTargetCamera()
             {
                 Target = proxy
+            });
+            commandBuffer.AddComponentData(entity, new CanvasScreenSize
+            {
+                Value = new int2(camera.pixelWidth, camera.pixelHeight)
             });
         }
     }

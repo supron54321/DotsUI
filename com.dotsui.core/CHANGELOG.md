@@ -17,6 +17,7 @@
 * Unit tests upgraded to latest changes in the core
 * Minor performance improvements
 * Updated roadmap
+* LegacyRenderSystem renamed to HybridRenderSystem
 
 ### Fixes
 * Fixed issue with last few trangles not being rendered arter InputField lost focus
