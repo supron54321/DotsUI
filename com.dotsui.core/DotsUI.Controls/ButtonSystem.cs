@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DotsUI.Core;
+using DotsUI.Core.Utils;
 using DotsUI.Input;
 using Unity.Entities;
 using Unity.Jobs;
@@ -17,9 +18,11 @@ namespace DotsUI.Controls
     public class ButtonSystem : JobComponentSystem
     {
         private EntityQuery m_EventGroup;
+        private InputHandleBarrier m_Barrier;
 
         protected override void OnCreate()
         {
+            m_Barrier = World.GetOrCreateSystem<InputHandleBarrier>();
             m_EventGroup = GetEntityQuery(new EntityQueryDesc()
             {
                 All = new[]
@@ -39,7 +42,7 @@ namespace DotsUI.Controls
             [ReadOnly] public ArchetypeChunkComponentType<PointerEvent> EventType;
             [ReadOnly] public ArchetypeChunkBufferType<PointerInputBuffer> BufferType;
 
-            [WriteOnly] public NativeQueue<Entity>.ParallelWriter ClickedButtons;
+            [WriteOnly] public AddFlagComponentCommandBuffer.ParallelWriter ClickedButtons;
             [ReadOnly] public ComponentDataFromEntity<Button> ButtonTargetType;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
@@ -55,7 +58,7 @@ namespace DotsUI.Controls
                         {
                             if (buff[j].EventType == PointerEventType.Click)
                             {
-                                ClickedButtons.Enqueue(eventArray[i].Target);
+                                ClickedButtons.TryAdd(eventArray[i].Target);
                             }
                         }
                     }
@@ -69,35 +72,27 @@ namespace DotsUI.Controls
         {
             public EntityCommandBuffer CommandBuffer;
             public NativeQueue<Entity> ToAdd;
+            public ComponentType ClickedEventComponent;
 
             public void Execute()
             {
-                ComponentType component = typeof(ButtonClickedEvent);
                 while (ToAdd.TryDequeue(out var entity))
-                    CommandBuffer.AddComponent(entity, component);
+                    CommandBuffer.AddComponent(entity, ClickedEventComponent);
             }
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            NativeQueue<Entity> clickedButtons = new NativeQueue<Entity>(Allocator.TempJob);
+            var commandBuff = m_Barrier.CreateAddFlagComponentCommandBuffer<ButtonClickedEvent>();
             ProcessClicks clicksJob = new ProcessClicks
             {
                 BufferType = GetArchetypeChunkBufferType<PointerInputBuffer>(),
                 EventType = GetArchetypeChunkComponentType<PointerEvent>(),
                 ButtonTargetType = GetComponentDataFromEntity<Button>(),
-                ClickedButtons = clickedButtons.AsParallelWriter()
+                ClickedButtons = commandBuff.AsParallelWriter()
             };
             inputDeps = clicksJob.Schedule(m_EventGroup, inputDeps);
-            var barrier = World.GetOrCreateSystem<InputHandleBarrier>();
-            AddComponentJob addComponentJob = new AddComponentJob
-            {
-                CommandBuffer = barrier.CreateCommandBuffer(),
-                ToAdd = clickedButtons,
-            };
-            inputDeps = addComponentJob.Schedule(inputDeps);
-            barrier.AddJobHandleForProducer(inputDeps);
-            inputDeps = clickedButtons.Dispose(inputDeps);
+            m_Barrier.AddJobHandleForProducer(inputDeps);
             return inputDeps;
         }
     }

@@ -35,7 +35,7 @@ namespace DotsUI.Input
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public ArchetypeChunkComponentType<PointerEvent> EventType;
             [ReadOnly] public ComponentDataFromEntity<T> TargetType;
-            [WriteOnly] public NativeHashMap<Entity, Entity>.Concurrent TargetToEvent;
+            [WriteOnly] public NativeHashMap<Entity, Entity>.ParallelWriter TargetToEvent;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
@@ -61,7 +61,7 @@ namespace DotsUI.Input
                 {
                     EntityType = GetArchetypeChunkEntityType(),
                     EventType = GetArchetypeChunkComponentType<PointerEvent>(true),
-                    TargetToEvent = m_TargetToEvent.ToConcurrent(),
+                    TargetToEvent = m_TargetToEvent.AsParallelWriter(),
                     TargetType = GetComponentDataFromEntity<T>(true)
                 };
                 inputDeps = createMap.Schedule(m_PointerEventQuery, inputDeps);

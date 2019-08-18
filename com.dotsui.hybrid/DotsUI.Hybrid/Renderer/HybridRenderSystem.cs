@@ -100,6 +100,24 @@ namespace DotsUI.Hybrid
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2, 0),
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.Float32, 2, 0),
             };
+
+            RequireForUpdate(GetEntityQuery(new EntityQueryDesc()
+            {
+                All = new ComponentType[]
+                {
+                    ComponentType.ReadOnly<MeshVertex>(),
+                    ComponentType.ReadOnly<MeshVertexIndex>(),
+                    ComponentType.ReadOnly<SubMeshInfo>(),
+                    ComponentType.ReadOnly<CanvasCommandBufferContainer>(),
+                    ComponentType.ReadOnly<CanvasMeshContainer>(),
+                    ComponentType.ReadOnly<CanvasSortLayer>(),
+                },
+                Any = new ComponentType[]
+                {
+                    ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
+                    ComponentType.ReadOnly<UpdateCanvasVerticesFlag>(),
+                }
+            }));
         }
 
         protected override void OnUpdate()

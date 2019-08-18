@@ -20,11 +20,8 @@ namespace DotsUI.Core
         {
             [ReadOnly]
             public float2 Dpi;
-            [ReadOnly]
-            public int ScreenWidth;
-            [ReadOnly]
-            public int ScreenHeight;
             [ReadOnly] public ArchetypeChunkComponentType<RectTransform> RectTransformType;
+            [ReadOnly] public ArchetypeChunkComponentType<CanvasScreenSize> CanvasSizeType;
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public ArchetypeChunkBufferType<Child> ChildType;
             [ReadOnly] public ArchetypeChunkComponentType<CanvasConstantPhysicalSizeScaler> ConstantPhysicalScaler;
@@ -49,6 +46,7 @@ namespace DotsUI.Core
                 var chunkRectTransform = chunk.GetNativeArray(RectTransformType);
                 var entities = chunk.GetNativeArray(EntityType);
                 var chunkChildren = chunk.GetBufferAccessor(ChildType);
+                var canvasSizeArray = chunk.GetNativeArray(CanvasSizeType);
 
                 NativeArray<CanvasConstantPhysicalSizeScaler> physicalSizeArray = default;
                 bool useConstantPhysicalSize = chunk.Has(ConstantPhysicalScaler);
@@ -74,7 +72,7 @@ namespace DotsUI.Core
                     var canvasRect = new WorldSpaceRect()
                     {
                         Min = chunkRectTransform[i].Position,
-                        Max = (chunkRectTransform[i].Position + new float2(ScreenWidth, ScreenHeight))
+                        Max = (chunkRectTransform[i].Position + canvasSizeArray[i].Value)
                     };
                     RebuildContext.WorldSpaceRectFromEntity[entities[i]] = canvasRect;
 
@@ -102,6 +100,7 @@ namespace DotsUI.Core
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<RectTransform>(),
+                    ComponentType.ReadOnly<CanvasScreenSize>(),
                     ComponentType.ReadOnly<Child>(),
                     ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
                     typeof(WorldSpaceRect),
@@ -120,7 +119,6 @@ namespace DotsUI.Core
         }
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var rectTransformType = GetArchetypeChunkComponentType<RectTransform>(true);
             var entityType = GetArchetypeChunkEntityType();
             var childType = GetArchetypeChunkBufferType<Child>(true);
             var childFromEntity = GetBufferFromEntity<Child>(true);
@@ -132,9 +130,8 @@ namespace DotsUI.Core
             var updateHierarchyJob = new UpdateHierarchy
             {
                 Dpi = new float2(dpi, dpi),
-                ScreenWidth = Screen.width,
-                ScreenHeight = Screen.height,
-                RectTransformType = rectTransformType,
+                RectTransformType = GetArchetypeChunkComponentType<RectTransform>(true),
+                CanvasSizeType = GetArchetypeChunkComponentType<CanvasScreenSize>(true),
                 EntityType = entityType,
                 ChildType = childType,
                 ConstantPhysicalScaler = GetArchetypeChunkComponentType<CanvasConstantPhysicalSizeScaler>(true),

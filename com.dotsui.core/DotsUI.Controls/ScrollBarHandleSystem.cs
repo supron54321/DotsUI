@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DotsUI.Core;
+using DotsUI.Core.Utils;
 using DotsUI.Input;
 using Unity.Burst;
 using Unity.Collections;
@@ -41,7 +42,7 @@ namespace DotsUI.Controls
             [ReadOnly] public NativeHashMap<Entity, Entity> TargetToEvent;
             [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerBufferFromEntity;
             [ReadOnly] public ComponentDataFromEntity<ScrollRect> ScrollRectFromEntity;
-            public NativeHashMap<Entity, int>.ParallelWriter MarkForRebuild;
+            public AddFlagComponentCommandBuffer.ParallelWriter AddFlagCommandBuff;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
@@ -63,7 +64,7 @@ namespace DotsUI.Controls
 
             private ScrollBar HandleInputEvent(Entity scrollBarEntity, ScrollBar scrollBar, PointerInputBuffer pointerInput)
             {
-                if(pointerInput.EventType == PointerEventType.Drag)
+                if (pointerInput.EventType == PointerEventType.Drag)
                 {
                     var scrollRect = ScrollRectFromEntity[scrollBar.ParentScrollRect];
                     float value = scrollBar.Value;
@@ -78,7 +79,7 @@ namespace DotsUI.Controls
 
                     if (math.abs(value - scrollBar.Value) >= scrollBar.DragSensitivity)
                     {
-                        MarkForRebuild.TryAdd(scrollBarEntity, 1);
+                        AddFlagCommandBuff.TryAdd(scrollBarEntity);
                     }
 
                     scrollBar.Value = value;
@@ -88,23 +89,22 @@ namespace DotsUI.Controls
             }
         }
 
-        struct MarkForRebuildJob : IJob
-        {
-            public EntityCommandBuffer CommandBuffer;
-            [ReadOnly] public NativeHashMap<Entity, int> MarkForRebuild;
+        //struct MarkForRebuildJob : IJob
+        //{
+        //    public EntityCommandBuffer CommandBuffer;
+        //    [ReadOnly] public NativeHashMap<Entity, int> MarkForRebuild;
 
 
-            public void Execute()
-            {
-                var entityArray = MarkForRebuild.GetKeyArray(Allocator.Temp);
-                for(int i = 0; i < entityArray.Length; i++)
-                    CommandBuffer.AddComponent<DirtyElementFlag>(entityArray[i]);
-            }
-        }
+        //    public void Execute()
+        //    {
+        //        var entityArray = MarkForRebuild.GetKeyArray(Allocator.Temp);
+        //        for(int i = 0; i < entityArray.Length; i++)
+        //            CommandBuffer.AddComponent<DirtyElementFlag>(entityArray[i]);
+        //    }
+        //}
 
         protected override JobHandle OnUpdateInput(JobHandle inputDeps, NativeHashMap<Entity, Entity> targetToEvent, BufferFromEntity<PointerInputBuffer> pointerBufferFromEntity)
         {
-            NativeHashMap<Entity, int> markForRebuild = new NativeHashMap<Entity, int>(4, Allocator.TempJob);
             ScrollBarHandleJob scrollBarJob = new ScrollBarHandleJob()
             {
                 EntityType = GetArchetypeChunkEntityType(),
@@ -113,18 +113,10 @@ namespace DotsUI.Controls
                 PointerBufferFromEntity = pointerBufferFromEntity,
                 ScrollBarRectType = GetArchetypeChunkComponentType<WorldSpaceRect>(true),
                 ScrollRectFromEntity = GetComponentDataFromEntity<ScrollRect>(true),
-                MarkForRebuild = markForRebuild.AsParallelWriter(),
+                AddFlagCommandBuff = m_Barrier.CreateAddFlagComponentCommandBuffer<DirtyElementFlag>().AsParallelWriter()
             };
             inputDeps = scrollBarJob.Schedule(m_ScrollBarQuery, inputDeps);
-            var ecb = m_Barrier.CreateCommandBuffer();
-            MarkForRebuildJob rebuildJob = new MarkForRebuildJob()
-            {
-                MarkForRebuild = markForRebuild,
-                CommandBuffer = ecb
-            };
-            inputDeps = rebuildJob.Schedule(inputDeps);
             m_Barrier.AddJobHandleForProducer(inputDeps);
-            inputDeps = markForRebuild.Dispose(inputDeps);
             return inputDeps;
         }
     }

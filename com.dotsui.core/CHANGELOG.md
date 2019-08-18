@@ -18,12 +18,16 @@
 * Minor performance improvements
 * Updated roadmap
 * LegacyRenderSystem renamed to HybridRenderSystem
+* Improved idle performance of HybridRenderSystem (added RequireForUpdate EntityQuery)
 
 ### Fixes
+
 * Fixed issue with last few trangles not being rendered arter InputField lost focus
 * Renamed folders in DotsUI.Hybrid
 * Removed unnecessary sync point in button system
 * Fixed exception in selectable system caused by NativeHashmap being overfilled
+* Fixed issue with canvas not being properly rebuilt after camera size changed
+* Canvas pixel size is now properly taken from camera size (instead of screen size)
 
 
 ## [0.0.1] - 2019-07-23

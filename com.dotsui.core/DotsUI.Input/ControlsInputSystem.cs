@@ -87,9 +87,6 @@ namespace DotsUI.Input
     [UpdateInGroup(typeof(ControlsInputSystem))]
     public class ControlsInputSystemHandler : JobComponentSystem
     {
-        private EntityQuery m_PointerGroup;
-
-        private NativeHashMap<int, Touch> m_Touches;
         private EntityQuery m_RootGroup;
         private float2 m_LastFrameMousePos;
 
@@ -113,18 +110,6 @@ namespace DotsUI.Input
             m_PointerEventArchetype = EntityManager.CreateArchetype(typeof(PointerEvent), typeof(PointerInputBuffer));
             m_KeyboardEventArchetype =
                 EntityManager.CreateArchetype(typeof(KeyboardEvent), typeof(KeyboardInputBuffer));
-            m_PointerGroup = GetEntityQuery(new EntityQueryDesc()
-            {
-                All = new[]
-                {
-                    ComponentType.ReadOnly<PointerInputReceiver>(),
-                    ComponentType.ReadOnly<RectTransform>()
-                },
-                Any = new[]
-                {
-                    ComponentType.ReadOnly<WorldSpaceRect>(),
-                }
-            });
 
             m_RootGroup = GetEntityQuery(new EntityQueryDesc
             {
@@ -141,7 +126,6 @@ namespace DotsUI.Input
                 Options = EntityQueryOptions.FilterWriteGroup
             });
 
-            m_Touches = new NativeHashMap<int, Touch>(5, Allocator.Persistent);
             EntityManager.CreateEntity(typeof(InputSystemState));
             EntityManager.CreateEntity(typeof(NativePointerInputContainer), typeof(NativePointerButtonEvent));
             EntityManager.CreateEntity(typeof(NativeKeyboardInputContainer), typeof(NativeKeyboardInputEvent));
@@ -150,16 +134,13 @@ namespace DotsUI.Input
 
         protected override void OnDestroy()
         {
-            m_Touches.Dispose();
             m_ButtonStates.Dispose();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var smpl = new Profiling.ProfilerSample("GatherEvents");
             GatherEvents(Allocator.TempJob, out var pointerEvents, out var keyboardEvents);
             var pointerFrameData = GatherPointerFrameData(Allocator.TempJob);
-            smpl.Dispose();
             NativeArray<Entity> roots = m_RootGroup.ToEntityArray(Allocator.TempJob);
             var childrenFromEntity = GetBufferFromEntity<Child>(true);
             var worldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>(true);
@@ -220,32 +201,16 @@ namespace DotsUI.Input
             };
             inputDeps = spawnEventsJob.Schedule(inputDeps);
             inputDeps = targetToEvent.Dispose(inputDeps);
-            inputDeps.Complete();
-
-            if (keyboardEvents.Length > 0)
+            UpdateKeyboardEvents updateKeyboardJob = new UpdateKeyboardEvents()
             {
-                var selected = GetSingleton<InputSystemState>().SelectedEntity;
-                if (selected != default)
-                {
-                    var eventEntity = EntityManager.CreateEntity(m_KeyboardEventArchetype);
-                    var buff = EntityManager.GetBuffer<KeyboardInputBuffer>(eventEntity);
-                    EntityManager.SetComponentData(eventEntity, new KeyboardEvent()
-                    {
-                        Target = selected
-                    });
-                    for (int i = 0; i < keyboardEvents.Length; i++)
-                    {
-                        if (keyboardEvents[i].EventType == NativeInputEventType.KeyDown)
-                            buff.Add(new KeyboardInputBuffer()
-                            {
-                                Character = keyboardEvents[i].Character,
-                                EventType = keyboardEvents[i].KbdEvent,
-                                KeyCode = keyboardEvents[i].KeyCode
-                            });
-                    }
-                }
-            }
-            keyboardEvents.Dispose();
+                KeyboardEvents = keyboardEvents,
+                EventArchetype = m_KeyboardEventArchetype,
+                Manager = ecb,
+                StateEntity = stateEntity,
+                StateFromEntity = stateComponentFromEntity
+            };
+            inputDeps = updateKeyboardJob.Schedule(inputDeps);
+            m_CommandBufferSystem.AddJobHandleForProducer(inputDeps);
             m_LastFrameMousePos = ((float3)UnityEngine.Input.mousePosition).xy;
             return inputDeps;
         }
