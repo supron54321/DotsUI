@@ -2,12 +2,12 @@
 
 **This file contains changelog for all DotsUI packages**
 
-## [0.2.0] - 2019-07-XX
+## [0.2.0] - 2019-08-19
 
 ### Added
 
 * Added drag & drop support
-* Added scroll rect
+* Added ScrollRect
 
 ### Changes
 
@@ -22,12 +22,13 @@
 
 ### Fixes
 
-* Fixed issue with last few trangles not being rendered arter InputField lost focus
+* Fixed issue with last few triangles not being rendered arter InputField lost focus
 * Renamed folders in DotsUI.Hybrid
 * Removed unnecessary sync point in button system
 * Fixed exception in selectable system caused by NativeHashmap being overfilled
 * Fixed issue with canvas not being properly rebuilt after camera size changed
 * Canvas pixel size is now properly taken from camera size (instead of screen size)
+* Pointer events are now properly stopped from being propagated to parents
 
 
 ## [0.0.1] - 2019-07-23
