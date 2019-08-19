@@ -9,6 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace DotsUI.Core
@@ -29,7 +30,7 @@ namespace DotsUI.Core
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<ElementVertexPointerInMesh> VertexPointerFromEntity;
             [ReadOnly] public ComponentDataFromEntity<Disabled> DisabledFromEntity;
-            [ReadOnly] public BufferFromEntity<UIChild> ChildFromEntity;
+            [ReadOnly] public BufferFromEntity<Child> ChildFromEntity;
             [ReadOnly] public NativeHashMap<Entity, MaterialInfo> EntityToMaterial;
 
 
@@ -128,12 +129,12 @@ namespace DotsUI.Core
 
         private NativeHashMap<Entity, MaterialInfo> m_EntityToMaterialID;
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
             m_EntityToMaterialID.Dispose();
         }
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             m_EntityToMaterialID = new NativeHashMap<Entity, MaterialInfo>(10000, Allocator.Persistent);
 
@@ -142,7 +143,7 @@ namespace DotsUI.Core
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<RectTransform>(),
-                    ComponentType.ReadOnly<UIChild>(),
+                    ComponentType.ReadOnly<Child>(),
                     ComponentType.ReadOnly<WorldSpaceRect>(),
                     ComponentType.ReadWrite<MeshVertex>(),
                     ComponentType.ReadWrite<MeshVertexIndex>(),
@@ -150,7 +151,7 @@ namespace DotsUI.Core
                 },
                 None = new ComponentType[]
                 {
-                    typeof(UIParent)
+                    typeof(Parent)
                 },
                 Options = EntityQueryOptions.FilterWriteGroup
             });
@@ -171,12 +172,12 @@ namespace DotsUI.Core
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            if (m_RootGroup.CalculateLength() < 1)
+            if (m_RootGroup.CalculateEntityCount() < 1)
                 return inputDeps;
 
             inputDeps = UpdateBatchIndices(inputDeps);
 
-            var childFromEntity = GetBufferFromEntity<UIChild>(true);
+            var childFromEntity = GetBufferFromEntity<Child>(true);
             var verticesFromEntity = GetBufferFromEntity<ControlVertexData>(true);
             var trianglesFromEntity = GetBufferFromEntity<ControlVertexIndex>(true);
 

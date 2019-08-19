@@ -21,7 +21,7 @@ namespace DotsUI.Core
 
     public struct CanvasScreenSize : IComponentData
     {
-        public float2 Value;
+        public int2 Value;
     }
 
     public struct CanvasConstantPixelSizeScaler : IComponentData

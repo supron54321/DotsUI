@@ -82,6 +82,14 @@ namespace DotsUI.Core
             get { return new float2(Max.x, Min.y); }
         }
 
+        public float2 Size
+        {
+            get
+            {
+                return new float2(Max-Min);
+            }
+        }
+
         [Obsolete]
         public float CalculateWidth()
         {
@@ -100,17 +108,20 @@ namespace DotsUI.Core
         }
     }
 
+    [Obsolete("Parent removed. Use Unity.Transforms.Parent instead", true)]
     public struct UIParent : IComponentData
     {
         public Entity Value;
     }
 
+    [Obsolete("UIPreviousParent removed. Use Unity.Transforms.PreviousParent instead", true)]
     public struct UIPreviousParent : ISystemStateComponentData
     {
         public Entity Value;
     }
 
     [InternalBufferCapacity(8)]
+    [Obsolete("UIChild removed. Use Unity.Transforms.Child instead", true)]
     public struct UIChild : ISystemStateBufferElementData
     {
         public Entity Value;

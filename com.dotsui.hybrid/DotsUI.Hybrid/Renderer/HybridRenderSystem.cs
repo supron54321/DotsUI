@@ -16,7 +16,7 @@ using UnityEngine.Rendering;
 namespace DotsUI.Hybrid
 {
     [UpdateInGroup(typeof(RenderSystemGroup))]
-    class LegacyRenderSystem : ComponentSystem
+    class HybridRenderSystem : ComponentSystem
     {
         private EntityQuery m_UpdateMeshAndCommandBufferGroup;
         private EntityQuery m_UpdateVerticesOnlyGroup;
@@ -100,14 +100,32 @@ namespace DotsUI.Hybrid
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2, 0),
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.Float32, 2, 0),
             };
+
+            RequireForUpdate(GetEntityQuery(new EntityQueryDesc()
+            {
+                All = new ComponentType[]
+                {
+                    ComponentType.ReadOnly<MeshVertex>(),
+                    ComponentType.ReadOnly<MeshVertexIndex>(),
+                    ComponentType.ReadOnly<SubMeshInfo>(),
+                    ComponentType.ReadOnly<CanvasCommandBufferContainer>(),
+                    ComponentType.ReadOnly<CanvasMeshContainer>(),
+                    ComponentType.ReadOnly<CanvasSortLayer>(),
+                },
+                Any = new ComponentType[]
+                {
+                    ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
+                    ComponentType.ReadOnly<UpdateCanvasVerticesFlag>(),
+                }
+            }));
         }
 
         protected override void OnUpdate()
         {
-            if (m_UpdateMeshAndCommandBufferGroup.CalculateLength() < 1 && m_UpdateVerticesOnlyGroup.CalculateLength() < 1)
+            if (m_UpdateMeshAndCommandBufferGroup.CalculateEntityCount() < 1 && m_UpdateVerticesOnlyGroup.CalculateEntityCount() < 1)
                 return;
 
-            if (m_UpdateMeshAndCommandBufferGroup.CalculateLength() > 0)
+            if (m_UpdateMeshAndCommandBufferGroup.CalculateEntityCount() > 0)
             {
                 RebuildMeshAndCommandBuffers();
 
@@ -154,7 +172,7 @@ namespace DotsUI.Hybrid
                 EntityManager.RemoveComponent<RebuildCanvasHierarchyFlag>(m_UpdateMeshAndCommandBufferGroup);
             }
 
-            if (m_UpdateVerticesOnlyGroup.CalculateLength() > 0)
+            if (m_UpdateVerticesOnlyGroup.CalculateEntityCount() > 0)
             {
                 UpdateVerticesOnly();
                 EntityManager.RemoveComponent<UpdateCanvasVerticesFlag>(m_UpdateVerticesOnlyGroup);
@@ -230,7 +248,7 @@ namespace DotsUI.Hybrid
         {
             using (new ProfilerSample("RenderSystem.SetVertexBuffer"))
             {
-                //unityMesh.Clear(true);
+                unityMesh.Clear(true);
                 unityMesh.SetVertexBufferParams(vertexArray.Length, m_MeshDescriptors[0], m_MeshDescriptors[1], m_MeshDescriptors[2], m_MeshDescriptors[3], m_MeshDescriptors[4]);
             }
             using (new ProfilerSample("UploadMesh"))

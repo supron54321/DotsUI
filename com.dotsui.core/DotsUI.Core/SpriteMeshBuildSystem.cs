@@ -29,6 +29,7 @@ namespace DotsUI.Core
                     ComponentType.ReadOnly<RebuildElementMeshFlag>(), 
                 }
             });
+            m_SpriteGroup.SetFilterChanged(typeof(RebuildElementMeshFlag));
         }
 
         [BurstCompile]
@@ -58,9 +59,9 @@ namespace DotsUI.Core
 
                 for(int i = 0; i < chunk.Count; i++)
                 {
-                    var assetEntity = spriteImages[i].Asset;
                     if (rebuildFlagArray[i].Rebuild)
                     {
+                        var assetEntity = spriteImages[i].Asset;
                         var vertices = vertexDataAccessor[i];
                         var triangles = vertexIndexAccessor[i];
                         var worldSpaceMask = worldSpaceMasks[i];

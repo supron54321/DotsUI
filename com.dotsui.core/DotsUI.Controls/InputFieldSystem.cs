@@ -12,6 +12,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Transforms;
 using KeyCode = UnityEngine.KeyCode;    // Avoid whole UnityEngine namespace
 
 namespace DotsUI.Controls
@@ -33,9 +34,9 @@ namespace DotsUI.Controls
         private NativeHashMap<Entity, Entity> m_TargetToPointerEvent;
         private InputHandleBarrier m_InputSystemBarrier;
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
-            m_CaretArchetype = EntityManager.CreateArchetype(typeof(RectTransform), typeof(UIParent), typeof(WorldSpaceRect), typeof(SpriteImage), 
+            m_CaretArchetype = EntityManager.CreateArchetype(typeof(RectTransform), typeof(Parent), typeof(WorldSpaceRect), typeof(SpriteImage), 
                 typeof(ControlVertexData), typeof(ControlVertexIndex), typeof(VertexColorValue), typeof(VertexColorMultiplier),
                 typeof(InputFieldCaret));
 
@@ -71,16 +72,15 @@ namespace DotsUI.Controls
             base.OnCreateManager();
         }
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
             m_TargetToKeyboardEvent.Dispose();
             m_TargetToPointerEvent.Dispose();
         }
-
         private struct EventProcessor : IJobChunk
         {
-            [ReadOnly] public BufferFromEntity<KeyboardInputBuffer> KeyboardInputBufferType;
-            [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerInputBufferType;
+            [ReadOnly] public BufferFromEntity<KeyboardInputBuffer> KeyboardInputBufferFromEntity;
+            [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerInputBufferFromEntity;
             [ReadOnly] public ComponentDataFromEntity<InputFieldCaretEntityLink> InputFieldCaretLinkFromEntity;
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             public ArchetypeChunkComponentType<InputFieldCaretState> CaretStateType;
@@ -110,7 +110,7 @@ namespace DotsUI.Controls
                     {
                         DynamicBuffer<PointerInputBuffer> pointerInputBuffer = default;
                         if (isPointerInputPending)
-                            pointerInputBuffer = PointerInputBufferType[pointerEventEntity];
+                            pointerInputBuffer = PointerInputBufferFromEntity[pointerEventEntity];
 
                         var textData = TextDataFromEntity[thisInputField.Target];
                         int oldTextLen = textData.Length;
@@ -123,7 +123,7 @@ namespace DotsUI.Controls
                         if (isKeyboardInputPending)
                         {
                             CommandBuff.AddComponent(chunkIndex, thisInputField.Target, new DirtyElementFlag());
-                            caretStateAccessor[i] = ProcessInput(inputFieldEntity, KeyboardInputBufferType[eventEntity], textData, caretStateAccessor[i], chunkIndex);
+                            caretStateAccessor[i] = ProcessInput(inputFieldEntity, KeyboardInputBufferFromEntity[eventEntity], textData, caretStateAccessor[i], chunkIndex);
                             if (thisInputField.Placeholder != default)
                             {
                                 if (textData.Length > 0)
@@ -183,7 +183,7 @@ namespace DotsUI.Controls
                 {
                     InputFieldEntity = inputFieldEntity
                 });
-                CommandBuff.SetComponent(chunkIdx, caret, new UIParent
+                CommandBuff.SetComponent(chunkIdx, caret, new Parent
                 {
                     Value = inputFieldEntity
                 });
@@ -259,7 +259,7 @@ namespace DotsUI.Controls
         {
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public ArchetypeChunkComponentType<KeyboardEvent> KbdEventType;
-            [WriteOnly] public NativeHashMap<Entity, Entity>.Concurrent TargetToEvent;
+            [WriteOnly] public NativeHashMap<Entity, Entity>.ParallelWriter TargetToEvent;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
@@ -276,7 +276,7 @@ namespace DotsUI.Controls
         {
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public ArchetypeChunkComponentType<PointerEvent> PointerEventType;
-            [WriteOnly] public NativeHashMap<Entity, Entity>.Concurrent TargetToEvent;
+            [WriteOnly] public NativeHashMap<Entity, Entity>.ParallelWriter TargetToEvent;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
@@ -292,40 +292,44 @@ namespace DotsUI.Controls
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            if (m_KeyboardEventGroup.CalculateLength() > 0 || m_PointerEventGroup.CalculateLength() > 0)
+            if (m_KeyboardEventGroup.CalculateEntityCount() > 0 || m_PointerEventGroup.CalculateEntityCount() > 0)
             {
                 m_TargetToKeyboardEvent.Clear();
                 m_TargetToPointerEvent.Clear();
-                CreateTargetToKeyboardEvent createTargetToKeyboardEvent = new CreateTargetToKeyboardEvent()
+                var entityType = GetArchetypeChunkEntityType();
+                using(new Profiling.ProfilerSample("ScheduleJobs"))
                 {
-                    EntityType = GetArchetypeChunkEntityType(),
-                    KbdEventType = GetArchetypeChunkComponentType<KeyboardEvent>(true),
-                    TargetToEvent = m_TargetToKeyboardEvent.ToConcurrent()
-                };
-                inputDeps = createTargetToKeyboardEvent.Schedule(m_KeyboardEventGroup, inputDeps);
-                CreateTargetToPointerEvent createTargetToPointerEvent = new CreateTargetToPointerEvent()
-                {
-                    EntityType = GetArchetypeChunkEntityType(),
-                    PointerEventType = GetArchetypeChunkComponentType<PointerEvent>(true),
-                    TargetToEvent = m_TargetToPointerEvent.ToConcurrent()
-                };
-                inputDeps = createTargetToPointerEvent.Schedule(m_PointerEventGroup, inputDeps);
-                EventProcessor inputEventProcessor = new EventProcessor()
-                {
-                    KeyboardInputBufferType = GetBufferFromEntity<KeyboardInputBuffer>(true),
-                    PointerInputBufferType = GetBufferFromEntity<PointerInputBuffer>(true),
-                    InputFieldCaretLinkFromEntity = GetComponentDataFromEntity<InputFieldCaretEntityLink>(true),
-                    EntityType = GetArchetypeChunkEntityType(),
-                    CaretStateType = GetArchetypeChunkComponentType<InputFieldCaretState>(),
-                    InputFieldType = GetArchetypeChunkComponentType<InputField>(),
-                    TextDataFromEntity = GetBufferFromEntity<TextData>(),
-                    TargetToKeyboardEvent = m_TargetToKeyboardEvent,
-                    TargetToPointerEvent = m_TargetToPointerEvent,
-                    CommandBuff = m_InputSystemBarrier.CreateCommandBuffer().ToConcurrent(),
-                    CaretArchetype = m_CaretArchetype
-                };
-                inputDeps = inputEventProcessor.Schedule(m_InputFieldGroup, inputDeps);
-                m_InputSystemBarrier.AddJobHandleForProducer(inputDeps);
+                    CreateTargetToKeyboardEvent createTargetToKeyboardEvent = new CreateTargetToKeyboardEvent()
+                    {
+                        EntityType = entityType,
+                        KbdEventType = GetArchetypeChunkComponentType<KeyboardEvent>(true),
+                        TargetToEvent = m_TargetToKeyboardEvent.AsParallelWriter()
+                    };
+                    inputDeps = createTargetToKeyboardEvent.Schedule(m_KeyboardEventGroup, inputDeps);
+                    CreateTargetToPointerEvent createTargetToPointerEvent = new CreateTargetToPointerEvent()
+                    {
+                        EntityType = entityType,
+                        PointerEventType = GetArchetypeChunkComponentType<PointerEvent>(true),
+                        TargetToEvent = m_TargetToPointerEvent.AsParallelWriter()
+                    };
+                    inputDeps = createTargetToPointerEvent.Schedule(m_PointerEventGroup, inputDeps);
+                    EventProcessor inputEventProcessor = new EventProcessor()
+                    {
+                        KeyboardInputBufferFromEntity = GetBufferFromEntity<KeyboardInputBuffer>(true),
+                        PointerInputBufferFromEntity = GetBufferFromEntity<PointerInputBuffer>(true),
+                        InputFieldCaretLinkFromEntity = GetComponentDataFromEntity<InputFieldCaretEntityLink>(true),
+                        EntityType = entityType,
+                        CaretStateType = GetArchetypeChunkComponentType<InputFieldCaretState>(),
+                        InputFieldType = GetArchetypeChunkComponentType<InputField>(),
+                        TextDataFromEntity = GetBufferFromEntity<TextData>(),
+                        TargetToKeyboardEvent = m_TargetToKeyboardEvent,
+                        TargetToPointerEvent = m_TargetToPointerEvent,
+                        CommandBuff = m_InputSystemBarrier.CreateCommandBuffer().ToConcurrent(),
+                        CaretArchetype = m_CaretArchetype
+                    };
+                    inputDeps = inputEventProcessor.Schedule(m_InputFieldGroup, inputDeps);
+                    m_InputSystemBarrier.AddJobHandleForProducer(inputDeps);
+                }
             }
 
             return inputDeps;
@@ -338,7 +342,7 @@ namespace DotsUI.Controls
                 CaretPosition = EntityManager.GetBuffer<TextData>(focusedEntity).Length,
             });
             m_CaretEntity = EntityManager.CreateEntity(m_CaretArchetype);
-            EntityManager.SetComponentData(m_CaretEntity, new UIParent()
+            EntityManager.SetComponentData(m_CaretEntity, new Parent()
             {
                 Value = focusedEntity
             });

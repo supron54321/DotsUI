@@ -19,9 +19,12 @@ namespace DotsUI.Controls.Tests
     {
         private Entity InstantiateInputFieldWithFocus(string textBuffer = "")
         {
-            var entity = m_Manager.CreateEntity(ComponentType.ReadWrite<KeyboardInputBuffer>(),
-                ComponentType.ReadWrite<InputField>(), ComponentType.ReadOnly<KeyboardEvent>(), ComponentType.ReadWrite<OnFocusEvent>(), ComponentType.ReadWrite<TextData>());
-
+            var entity = m_Manager.CreateEntity(typeof(InputField), typeof(TextData), typeof(InputFieldCaretState));
+            m_Manager.SetComponentData(entity, new InputField()
+            {
+                Placeholder = default,
+                Target = entity
+            });
             if (textBuffer.Length > 0)
             {
                 var buff = m_Manager.GetBuffer<TextData>(entity);
@@ -63,11 +66,22 @@ namespace DotsUI.Controls.Tests
         }
 
 
+        private Entity SpawnKeyboardEvent(Entity target)
+        {
+            var ret = m_Manager.CreateEntity(typeof(KeyboardEvent), typeof(KeyboardInputBuffer));
+            m_Manager.SetComponentData(ret, new KeyboardEvent
+            {
+                Target = target
+            });
+            return ret;
+        }
+
         [Test]
         public void KeyboardParseBackspace()
         {
             var emptyInputField = InstantiateInputFieldWithFocus();
-            var keyboardBuffer = m_Manager.GetBuffer<KeyboardInputBuffer>(emptyInputField);
+            Entity eventEntity = SpawnKeyboardEvent(emptyInputField);
+            var keyboardBuffer = m_Manager.GetBuffer<KeyboardInputBuffer>(eventEntity);
             keyboardBuffer.AddRange(KeyboardInput("Test String"));
             keyboardBuffer.Add(KeyboardInput(KeyCode.Backspace));
             keyboardBuffer.Add(KeyboardInput(KeyCode.Backspace));
@@ -84,7 +98,8 @@ namespace DotsUI.Controls.Tests
         public void KeyboardParseLRArrows()
         {
             var emptyInputField = InstantiateInputFieldWithFocus();
-            var keyboardBuffer = m_Manager.GetBuffer<KeyboardInputBuffer>(emptyInputField);
+            Entity eventEntity = SpawnKeyboardEvent(emptyInputField);
+            var keyboardBuffer = m_Manager.GetBuffer<KeyboardInputBuffer>(eventEntity);
             keyboardBuffer.AddRange(KeyboardInput("Test String"));
             keyboardBuffer.Add(KeyboardInput(KeyCode.LeftArrow));
             keyboardBuffer.Add(KeyboardInput(KeyCode.LeftArrow));
@@ -105,7 +120,8 @@ namespace DotsUI.Controls.Tests
         public void KeyboardParseHomeEnd()
         {
             var emptyInputField = InstantiateInputFieldWithFocus();
-            var keyboardBuffer = m_Manager.GetBuffer<KeyboardInputBuffer>(emptyInputField);
+            Entity eventEntity = SpawnKeyboardEvent(emptyInputField);
+            var keyboardBuffer = m_Manager.GetBuffer<KeyboardInputBuffer>(eventEntity);
             keyboardBuffer.AddRange(KeyboardInput("Test String"));
             keyboardBuffer.Add(KeyboardInput(KeyCode.Home));
             keyboardBuffer.AddRange(KeyboardInput("!!!!"));

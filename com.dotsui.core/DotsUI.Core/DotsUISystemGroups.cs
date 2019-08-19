@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DotsUI.Core.Utils;
 using Unity.Entities;
+using Unity.Transforms;
 
 namespace DotsUI.Core
 {
@@ -15,7 +17,7 @@ namespace DotsUI.Core
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(InputSystemGroup))]
-    public class InputHandleBarrier : EntityCommandBufferSystem
+    public class InputHandleBarrier : MicroCommandBufferSystem
     {
 
     }
@@ -29,6 +31,7 @@ namespace DotsUI.Core
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(UserInputSystemGroup))]
+    [UpdateBefore(typeof(TransformSystemGroup))]
     public class BeforeRectTransformUpdateGroup : ComponentSystemGroup
     {
 
@@ -36,13 +39,25 @@ namespace DotsUI.Core
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(BeforeRectTransformUpdateGroup))]
+    [UpdateAfter(typeof(TransformSystemGroup))]
     public class RectTransformSystemGroup : ComponentSystemGroup
     {
 
     }
 
+    /// <summary>
+    /// This group is intended for complex transform dependencies like ScrollRect.
+    /// It's executed after hierarchy update and allows you to override some of the transforms without rebuilding entire transforms.
+    /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(RectTransformSystemGroup))]
+    public class PostRectTransformSystemGroup : ComponentSystemGroup
+    {
+
+    }
+
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(PostRectTransformSystemGroup))]
     public class AssetUpdateSystemGroup : ComponentSystemGroup
     {
 

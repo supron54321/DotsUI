@@ -5,6 +5,7 @@ using DotsUI.Input;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
@@ -28,9 +29,9 @@ namespace DotsUI.Hybrid
 
         public DotsUIArchetypes(EntityManager manager)
         {
-            CanvasArchetype = manager.CreateArchetype(typeof(RectTransform), typeof(WorldSpaceRect));
+            CanvasArchetype = manager.CreateArchetype(typeof(RectTransform), typeof(LocalToWorld), typeof(WorldSpaceRect));
             GenericChildArchetype =
-                manager.CreateArchetype(typeof(RectTransform), typeof(WorldSpaceRect), typeof(UIParent));
+                manager.CreateArchetype(typeof(RectTransform), typeof(LocalToWorld), typeof(LocalToParent), typeof(WorldSpaceRect), typeof(Parent));
         }
     }
 
@@ -125,7 +126,7 @@ namespace DotsUI.Hybrid
                     //    continue;
                     Entity child = commandBuffer.CreateEntity(archetypes.GenericChildArchetype);
                     SetRectTransform(commandBuffer, childTransform, child);
-                    commandBuffer.SetComponentData(child, new UIParent() { Value = parentEntity });
+                    commandBuffer.SetComponentData(child, new Parent() { Value = parentEntity });
                     if (isPrefab)
                         commandBuffer.AddComponent(child, typeof(Prefab));
                     ConvertRectTransformsRecursive(childTransform, child, rectTransformToEntity, commandBuffer,

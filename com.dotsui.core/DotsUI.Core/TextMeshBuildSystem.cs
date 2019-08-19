@@ -210,11 +210,11 @@ namespace DotsUI.Core
         }
         private EntityQuery m_TextGroup;
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
         }
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             m_TextGroup = GetEntityQuery(new EntityQueryDesc
             {

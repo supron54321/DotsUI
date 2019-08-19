@@ -9,13 +9,13 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.TextCore;
 
 namespace DotsUI.Core
 {
     [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))]
-    [UpdateAfter(typeof(ParentSystem))]
     public class LayoutDirtSystem : JobComponentSystem
     {
         [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))][UpdateAfter(typeof(LayoutDirtSystem))]
@@ -30,7 +30,7 @@ namespace DotsUI.Core
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public ArchetypeChunkComponentType<DirtyElementFlag> DirtyElementType;
             [ReadOnly] public ArchetypeChunkComponentType<UpdateElementColor> UpdateColorType;
-            [ReadOnly] public ComponentDataFromEntity<UIParent> ParentFromEntity;
+            [ReadOnly] public ComponentDataFromEntity<Parent> ParentFromEntity;
             [ReadOnly] public ComponentType DirtyElementComponent;
             [ReadOnly] public ComponentType UpdateColorComponent;
 
@@ -74,11 +74,11 @@ namespace DotsUI.Core
         }
         private EntityQuery m_DirtyElements;
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
         }
 
-        protected override void OnCreateManager()
+        protected override void OnCreate()
         {
             m_Barrier = World.GetOrCreateSystem<SystemBarrier>();
             m_DirtyElements = GetEntityQuery(new EntityQueryDesc
@@ -95,7 +95,7 @@ namespace DotsUI.Core
         {
             var entityCommandBuffer = m_Barrier.CreateCommandBuffer().ToConcurrent();
             var dirtType = ComponentType.ReadOnly<DirtyElementFlag>();
-            var parentFromEntity = GetComponentDataFromEntity<UIParent>(true);
+            var parentFromEntity = GetComponentDataFromEntity<Parent>(true);
             var entityType = GetArchetypeChunkEntityType();
             var job = new MarkDirtyCanvases()
             {

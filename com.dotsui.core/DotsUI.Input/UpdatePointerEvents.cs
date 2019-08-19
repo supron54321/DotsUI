@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Drawing;
 using DotsUI.Core;
 using Unity.Burst;
@@ -5,87 +7,166 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace DotsUI.Input
 {
-    //[BurstCompile]
-    internal struct UpdatePointerEvents : IJob
+    internal struct SpawnPointerEvents : IJob
     {
-        [ReadOnly] public Entity StateEntity;
-        [ReadOnly][DeallocateOnJobCompletion] public NativeArray<Entity> Hits;
-        [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<MouseInputFrameData> PointerFrameData;
-
-        [ReadOnly] [DeallocateOnJobCompletion]
-        public NativeArray<(NativeInputEventType, PointerButton)> PointerEvents;
-
-        public NativeArray<MouseButtonState> ButtonStates;
-        public EntityCommandBuffer Manager;
+        [ReadOnly] public NativeMultiHashMap<Entity,  PointerInputBuffer> TargetToEvent;
+        public EntityCommandBuffer Ecb;
         public EntityArchetype EventArchetype;
-        [ReadOnly] public ComponentDataFromEntity<PointerInputReceiver> ReceiverFromEntity;
-        [ReadOnly] public ComponentDataFromEntity<UIParent> ParentFromEntity;
-        public ComponentDataFromEntity<InputSystemState> StateFromEntity;
 
+        struct EventComparer : IComparer< PointerInputBuffer>
+        {
+            public int Compare(PointerInputBuffer x, PointerInputBuffer y) => x.EventId.CompareTo(y.EventId);
+        }
 
         public void Execute()
         {
-            NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent =
-                new NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>>(8, Allocator.Temp);
+            var targets = TargetToEvent.GetKeyArray(Allocator.Temp);
+            NativeList<PointerInputBuffer> eventList = new NativeList<PointerInputBuffer>(4, Allocator.Temp);
+            for (int i = 0; i < targets.Length; i++)
+            {
+                var target = targets[i];
+                EventComparer eventComparer = new EventComparer();
+                if (TargetToEvent.TryGetFirstValue(target, out var item, out var it))
+                {
+                    var eventEntity = Ecb.CreateEntity(EventArchetype);
+                    Ecb.SetComponent(eventEntity, new PointerEvent
+                    {
+                        Target = target
+                    });
+                    var buffer = Ecb.SetBuffer<PointerInputBuffer>(eventEntity);
+                    do
+                    {
+                        eventList.Add(item);
+                    } while (TargetToEvent.TryGetNextValue(out item, ref it));
+                    eventList.Sort(eventComparer);
+                    buffer.ResizeUninitialized(eventList.Length);
+                    for (int j = 0; j < eventList.Length; j++)
+                        buffer[j] = eventList[j];
+                    eventList.Clear();
+                    eventList.Clear();
+                }
+            }
+        }
+    }
+    [BurstCompile]
+    internal struct UpdatePointerEvents : IJob
+    {
+        [ReadOnly] public Entity StateEntity;
+        [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<Entity> Hits;
+        [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<MouseInputFrameData> PointerFrameData;
+
+        [ReadOnly]
+        [DeallocateOnJobCompletion]
+        public NativeArray<NativePointerButtonEvent> PointerEvents;
+
+        public NativeArray<MouseButtonState> ButtonStates;
+        [ReadOnly] public ComponentDataFromEntity<PointerInputReceiver> ReceiverFromEntity;
+        [ReadOnly] public ComponentDataFromEntity<Parent> ParentFromEntity;
+        public ComponentDataFromEntity<InputSystemState> StateFromEntity;
+        [ReadOnly] public float DragThreshold;
+
+        public NativeMultiHashMap<Entity, PointerInputBuffer> TargetToEvent;
+
+        // used to preserve order in NativeMultiHashMap
+        private int m_EventIdCounter;
+
+        public void Execute()
+        {
+            m_EventIdCounter = 0;
+            TargetToEvent.Clear();
             var state = StateFromEntity[StateEntity];
             // Currently only mouse is fully supported. That's why I pick only the first hit entity (mouse) and skip touches
             Entity mouseHit = Hits[0];
-            UpdateHover(mouseHit, ref targetToEvent, ref state);
-            UpdateButtons(mouseHit, ref targetToEvent, ref state);
+            UpdateHover(mouseHit, ref state);
+            UpdateButtons(mouseHit, ref state);
+            UpdateDrag(mouseHit, ref state);
             StateFromEntity[StateEntity] = state;
         }
 
-        private void UpdateButtons(Entity mouseHit,
-            ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent,
-            ref InputSystemState state)
+        private void UpdateDrag(Entity mouseHit, ref InputSystemState state)
+        {
+            for (int i = 0; i < ButtonStates.Length; i++)
+            {
+                var buttonState = ButtonStates[(int)i];
+                if (buttonState.Pressed && buttonState.PressEntity != default)
+                {
+                    var dragDelta = PointerFrameData[0].Position - buttonState.PressPosition;
+                    var dragLength = math.length(dragDelta);
+                    if (!buttonState.IsDragging)
+                    {
+                        if (dragLength > DragThreshold)
+                        {
+                            buttonState.IsDragging = true;
+                            CreateEvent(buttonState.PressEntity, PointerEventType.BeginDrag, true, (PointerButton)i);
+                        }
+                    }
+                    else if (dragLength > 0.0f)
+                    {
+                        CreateEvent(buttonState.PressEntity, PointerEventType.Drag, true, (PointerButton)i);
+                    }
+                }
+                ButtonStates[(int)i] = buttonState;
+            }
+        }
+
+        private void UpdateButtons(Entity mouseHit, ref InputSystemState state)
         {
             for (int i = 0; i < PointerEvents.Length; i++)
             {
-                var (eventType, button) = PointerEvents[i];
+                var eventType = PointerEvents[i].EventType;
+                var button = PointerEvents[i].Button;
                 if (eventType == NativeInputEventType.PointerDown)
                 {
-                    HandleButtonDown(mouseHit, ref targetToEvent, ref state, button);
+                    HandleButtonDown(mouseHit, ref state, button);
                 }
                 else if (eventType == NativeInputEventType.PointerUp)
                 {
-                    HandleButtonUp(mouseHit, ref targetToEvent, ref state, button);
+                    HandleButtonUp(mouseHit, ref state, button);
                 }
             }
         }
 
-        private void HandleButtonUp(Entity mouseHit,
-            ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent,
-            ref InputSystemState state, PointerButton button)
+        private void HandleButtonUp(Entity mouseHit, ref InputSystemState state, PointerButton button)
         {
-            var buttonState = ButtonStates[(int) button];
+            var buttonState = ButtonStates[(int)button];
 
             buttonState.Pressed = false;
 
+
             if (buttonState.PressEntity != default)
-                CreateEvent(buttonState.PressEntity, PointerEventType.Up, true, button, ref targetToEvent);
+                CreateEvent(buttonState.PressEntity, PointerEventType.Up, true, button);
+
+            if (buttonState.IsDragging)
+            {
+                CreateEvent(buttonState.PressEntity, PointerEventType.EndDrag, true, button);
+                if (mouseHit != buttonState.PressEntity)
+                {
+                    if (mouseHit != default)
+                        CreateEvent(mouseHit, PointerEventType.Drop, true, button);
+                }
+            }
 
             if (button == PointerButton.Left)
             {
                 if (mouseHit == buttonState.PressEntity)
                 {
-                    CreateEvent(buttonState.PressEntity, PointerEventType.Click, true, button, ref targetToEvent);
+                    CreateEvent(buttonState.PressEntity, PointerEventType.Click, true, button);
                 }
             }
 
-            //buttonState.PressPosition = PointerFrameData[0].Position;
+            buttonState.IsDragging = false;
             buttonState.PressEntity = default;
-            ButtonStates[(int) button] = buttonState;
+            ButtonStates[(int)button] = buttonState;
         }
 
-        private void HandleButtonDown(Entity mouseHit,
-            ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent,
-            ref InputSystemState state, PointerButton button)
+        private void HandleButtonDown(Entity mouseHit, ref InputSystemState state, PointerButton button)
         {
-            var buttonState = ButtonStates[(int) button];
+            var buttonState = ButtonStates[(int)button];
 
             buttonState.Pressed = true;
             buttonState.PressPosition = PointerFrameData[0].Position;
@@ -95,76 +176,66 @@ namespace DotsUI.Input
                 if (mouseHit != state.SelectedEntity)
                 {
                     //TODO: Selection event
-                    if(state.SelectedEntity != default)
-                        CreateEvent(state.SelectedEntity, PointerEventType.Deselected, true, PointerButton.Left, ref targetToEvent);
-                    if(mouseHit != default)
-                        CreateEvent(mouseHit, PointerEventType.Selected, true, PointerButton.Left, ref targetToEvent);
+                    if (state.SelectedEntity != default)
+                        CreateEvent(state.SelectedEntity, PointerEventType.Deselected, true, PointerButton.Left);
+                    if (mouseHit != default)
+                        CreateEvent(mouseHit, PointerEventType.Selected, true, PointerButton.Left);
                     state.SelectedEntity = mouseHit;
                 }
             }
 
             if (mouseHit != default)
-                CreateEvent(mouseHit, PointerEventType.Down, true, button, ref targetToEvent);
+                CreateEvent(mouseHit, PointerEventType.Down, true, button);
 
-            ButtonStates[(int) button] = buttonState;
+            ButtonStates[(int)button] = buttonState;
         }
 
-        private void UpdateHover(Entity mouseHit,
-            ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent,
-            ref InputSystemState state)
+        private void UpdateHover(Entity mouseHit, ref InputSystemState state)
         {
             if (state.HoveredEntity != mouseHit)
             {
                 if (ReceiverFromEntity.Exists(state.HoveredEntity))
                     CreateEvent(state.HoveredEntity, PointerEventType.Exit, true,
-                        PointerButton.Invalid, ref targetToEvent);
+                        PointerButton.Invalid);
                 if (mouseHit != default)
-                    CreateEvent(mouseHit, PointerEventType.Enter, true, PointerButton.Invalid,
-                        ref targetToEvent);
+                    CreateEvent(mouseHit, PointerEventType.Enter, true, PointerButton.Invalid);
                 state.HoveredEntity = mouseHit;
             }
         }
 
-        private void CreateEvent(Entity target, PointerEventType type, bool propagateParent,
-            PointerButton button,
-            ref NativeHashMap<Entity, DynamicBuffer<PointerInputBuffer>> targetToEvent)
+        private void CreateEvent(Entity target, PointerEventType type, bool propagateParent, PointerButton button)
         {
             if (ReceiverFromEntity.Exists(target) && (ReceiverFromEntity[target].ListenerTypes & type) == type)
             {
-                if (!targetToEvent.TryGetValue(target, out var eventBuffer))
+                PointerEventData eventData = new PointerEventData()
                 {
-                    var eventEntity = Manager.CreateEntity(EventArchetype);
-                    var data = new PointerEvent()
-                    {
-                        Target = target,
-                    };
-                    Manager.SetComponent(eventEntity, data);
-                    eventBuffer = Manager.SetBuffer<PointerInputBuffer>(eventEntity);
-                    targetToEvent.TryAdd(target, eventBuffer);
+                    Button = button,
+                    ClickCount = -1,
+                    ClickTime = 0.0f,
+                    Delta = PointerFrameData[0].Delta,
+                    PointerId = -1,
+                    Position = PointerFrameData[0].Position,
+                    ScrollDelta = float2.zero,
+                    UseDragThreshold = false,
+                };
+                if (button != PointerButton.Invalid)
+                {
+                    eventData.IsDragging = ButtonStates[(int)button].IsDragging;
+                    eventData.PressPosition = ButtonStates[(int)button].PressPosition;
+                    eventData.PressEntity = ButtonStates[(int)button].PressEntity;
                 }
-
-                eventBuffer.Add(new PointerInputBuffer()
+                TargetToEvent.Add(target, new PointerInputBuffer()
                 {
+                    EventId = m_EventIdCounter++,
                     EventType = type,
-                    EventData = new PointerEventData()
-                    {
-                        Button = button,
-                        ClickCount = -1,
-                        ClickTime = 0.0f,
-                        Delta = PointerFrameData[0].Delta,
-                        IsDragging = false,
-                        PointerId = -1,
-                        Position = PointerFrameData[0].Position,
-                        PressPosition = float2.zero,
-                        ScrollDelta = float2.zero,
-                        UseDragThreshold = false,
-                    }
+                    EventData = eventData
                 });
             }
 
-            if (!propagateParent)
+            if (!propagateParent || IsConsumableType(type))
                 return;
             Entity parent = GetParent(target);
+
             while (parent != default)
             {
                 if (!ReceiverFromEntity.Exists(parent))
@@ -180,7 +251,7 @@ namespace DotsUI.Input
                             propagateParent = false;
                     }
 
-                    CreateEvent(parent, type, propagateParent, button, ref targetToEvent);
+                    CreateEvent(parent, type, propagateParent, button);
                     break;
                 }
             }
@@ -195,6 +266,10 @@ namespace DotsUI.Input
                 case PointerEventType.Click:
                 case PointerEventType.Selected:
                 case PointerEventType.Deselected:
+                case PointerEventType.BeginDrag:
+                case PointerEventType.EndDrag:
+                case PointerEventType.Drag:
+                case PointerEventType.Drop:
                     return true;
                 default:
                     return false;

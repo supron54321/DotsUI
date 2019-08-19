@@ -13,6 +13,7 @@ using UnityEngine.Experimental.PlayerLoop;
 #endif
 using UnityEngineInternal.Input;
 using Unity.Entities;
+using Unity.Transforms;
 using RectTransform = DotsUI.Core.RectTransform;
 
 namespace DotsUI.Input
@@ -60,11 +61,13 @@ namespace DotsUI.Input
         public bool UseDragThreshold;
         public bool IsDragging;
         public PointerButton Button;
+        public Entity PressEntity { get; set; }
     }
 
     internal struct MouseButtonState
     {
         public bool Pressed;
+        public bool IsDragging;
         public float2 PressPosition;
         public Entity PressEntity;
     }
@@ -84,9 +87,6 @@ namespace DotsUI.Input
     [UpdateInGroup(typeof(ControlsInputSystem))]
     public class ControlsInputSystemHandler : JobComponentSystem
     {
-        private EntityQuery m_PointerGroup;
-
-        private NativeHashMap<int, Touch> m_Touches;
         private EntityQuery m_RootGroup;
         private float2 m_LastFrameMousePos;
 
@@ -98,52 +98,42 @@ namespace DotsUI.Input
 
         private ControlsInputBufferSystem m_CommandBufferSystem;
 
-        protected override void OnCreateManager()
+
+        public float DragThreshold { get; set; }
+
+        protected override void OnCreate()
         {
+            DragThreshold = 3.0f;
             m_ButtonStates = new NativeArray<MouseButtonState>(3, Allocator.Persistent);
             m_CommandBufferSystem = World.GetOrCreateSystem<ControlsInputBufferSystem>();
 
             m_PointerEventArchetype = EntityManager.CreateArchetype(typeof(PointerEvent), typeof(PointerInputBuffer));
             m_KeyboardEventArchetype =
                 EntityManager.CreateArchetype(typeof(KeyboardEvent), typeof(KeyboardInputBuffer));
-            m_PointerGroup = GetEntityQuery(new EntityQueryDesc()
-            {
-                All = new[]
-                {
-                    ComponentType.ReadOnly<PointerInputReceiver>(),
-                    ComponentType.ReadOnly<RectTransform>()
-                },
-                Any = new[]
-                {
-                    ComponentType.ReadOnly<WorldSpaceRect>(),
-                }
-            });
 
             m_RootGroup = GetEntityQuery(new EntityQueryDesc
             {
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<RectTransform>(),
-                    ComponentType.ReadOnly<UIChild>(),
+                    ComponentType.ReadOnly<Child>(),
                     ComponentType.ReadOnly<WorldSpaceRect>(),
                 },
                 None = new ComponentType[]
                 {
-                    typeof(UIParent)
+                    typeof(Parent)
                 },
                 Options = EntityQueryOptions.FilterWriteGroup
             });
 
-            m_Touches = new NativeHashMap<int, Touch>(5, Allocator.Persistent);
             EntityManager.CreateEntity(typeof(InputSystemState));
             EntityManager.CreateEntity(typeof(NativePointerInputContainer), typeof(NativePointerButtonEvent));
             EntityManager.CreateEntity(typeof(NativeKeyboardInputContainer), typeof(NativeKeyboardInputEvent));
             base.OnCreateManager();
         }
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroy()
         {
-            m_Touches.Dispose();
             m_ButtonStates.Dispose();
         }
 
@@ -151,11 +141,10 @@ namespace DotsUI.Input
         {
             GatherEvents(Allocator.TempJob, out var pointerEvents, out var keyboardEvents);
             var pointerFrameData = GatherPointerFrameData(Allocator.TempJob);
-
             NativeArray<Entity> roots = m_RootGroup.ToEntityArray(Allocator.TempJob);
-            var childrenFromEntity = GetBufferFromEntity<UIChild>(true);
+            var childrenFromEntity = GetBufferFromEntity<Child>(true);
             var worldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>(true);
-            var parentFromEntity = GetComponentDataFromEntity<UIParent>(true);
+            var parentFromEntity = GetComponentDataFromEntity<Parent>(true);
             var pointerReceiverFromEntity = GetComponentDataFromEntity<PointerInputReceiver>(true);
 
             var stateComponentFromEntity = GetComponentDataFromEntity<InputSystemState>();
@@ -189,46 +178,39 @@ namespace DotsUI.Input
             inputDeps = canvasHits.Schedule(inputDeps);
 
             EntityCommandBuffer ecb = m_CommandBufferSystem.CreateCommandBuffer();
+            NativeMultiHashMap<Entity, PointerInputBuffer> targetToEvent = new NativeMultiHashMap<Entity, PointerInputBuffer>(16, Allocator.TempJob);
             UpdatePointerEvents updatePointerJob = new UpdatePointerEvents()
             {
                 ButtonStates = m_ButtonStates,
-                EventArchetype = m_PointerEventArchetype,
                 StateEntity = stateEntity,
                 Hits = globalHits,
                 ReceiverFromEntity = pointerReceiverFromEntity,
                 StateFromEntity = stateComponentFromEntity,
-                Manager = ecb,
                 PointerEvents = pointerEvents,
                 ParentFromEntity = parentFromEntity,
                 PointerFrameData = pointerFrameData,
+                DragThreshold = DragThreshold,
+                TargetToEvent = targetToEvent
             };
             inputDeps = updatePointerJob.Schedule(inputDeps);
-            inputDeps.Complete();
-
-            if (keyboardEvents.Length > 0)
+            SpawnPointerEvents spawnEventsJob = new SpawnPointerEvents()
             {
-                var selected = GetSingleton<InputSystemState>().SelectedEntity;
-                if (selected != default)
-                {
-                    var eventEntity = EntityManager.CreateEntity(m_KeyboardEventArchetype);
-                    var buff = EntityManager.GetBuffer<KeyboardInputBuffer>(eventEntity);
-                    EntityManager.SetComponentData(eventEntity, new KeyboardEvent()
-                    {
-                        Target = selected
-                    });
-                    for (int i = 0; i < keyboardEvents.Length; i++)
-                    {
-                        if (keyboardEvents[i].EventType == NativeInputEventType.KeyDown)
-                            buff.Add(new KeyboardInputBuffer()
-                            {
-                                Character = keyboardEvents[i].Character,
-                                EventType = keyboardEvents[i].KbdEvent,
-                                KeyCode = keyboardEvents[i].KeyCode
-                            });
-                    }
-                }
-            }
-            keyboardEvents.Dispose();
+                EventArchetype = m_PointerEventArchetype,
+                Ecb = ecb,
+                TargetToEvent = targetToEvent
+            };
+            inputDeps = spawnEventsJob.Schedule(inputDeps);
+            inputDeps = targetToEvent.Dispose(inputDeps);
+            UpdateKeyboardEvents updateKeyboardJob = new UpdateKeyboardEvents()
+            {
+                KeyboardEvents = keyboardEvents,
+                EventArchetype = m_KeyboardEventArchetype,
+                Manager = ecb,
+                StateEntity = stateEntity,
+                StateFromEntity = stateComponentFromEntity
+            };
+            inputDeps = updateKeyboardJob.Schedule(inputDeps);
+            m_CommandBufferSystem.AddJobHandleForProducer(inputDeps);
             m_LastFrameMousePos = ((float3)UnityEngine.Input.mousePosition).xy;
             return inputDeps;
         }
@@ -255,7 +237,7 @@ namespace DotsUI.Input
             return ret;
         }
 
-        private void GatherEvents(Allocator allocator, out NativeArray<(NativeInputEventType, PointerButton)> pointerEventsArray, out NativeArray<NativeKeyboardInputEvent> keyboardEventArray)
+        private void GatherEvents(Allocator allocator, out NativeArray<NativePointerButtonEvent> pointerEventsArray, out NativeArray<NativeKeyboardInputEvent> keyboardEventArray)
         {
             var pointerContainerEntity = GetSingletonEntity<NativePointerInputContainer>();
             var keyboardContainerEntity = GetSingletonEntity<NativeKeyboardInputContainer>();
@@ -263,11 +245,11 @@ namespace DotsUI.Input
             var pointerBuffer = EntityManager.GetBuffer<NativePointerButtonEvent>(pointerContainerEntity);
             var keyboardBuffer = EntityManager.GetBuffer<NativeKeyboardInputEvent>(keyboardContainerEntity);
 
-            pointerEventsArray = new NativeArray<(NativeInputEventType, PointerButton)>(pointerBuffer.Length, allocator);
+            pointerEventsArray = new NativeArray<NativePointerButtonEvent>(pointerBuffer.Length, allocator);
             keyboardEventArray = new NativeArray<NativeKeyboardInputEvent>(keyboardBuffer.Length, allocator);
 
             for (int i = 0; i < pointerBuffer.Length; i++)
-                pointerEventsArray[i] = (pointerBuffer[i].EventType, pointerBuffer[i].Button);
+                pointerEventsArray[i] = pointerBuffer[i];
 
             for (int i = 0; i < keyboardBuffer.Length; i++)
                 keyboardEventArray[i] = keyboardBuffer[i];

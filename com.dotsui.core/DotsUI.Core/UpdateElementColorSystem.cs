@@ -8,6 +8,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Transforms;
 
 namespace DotsUI.Core
 {
@@ -34,7 +35,7 @@ namespace DotsUI.Core
         struct UpdateColorVertices : IJobChunk
         {
             [NativeDisableContainerSafetyRestriction] public BufferFromEntity<MeshVertex> VertexFromCanvasEntity;
-            [ReadOnly] public ComponentDataFromEntity<UIParent> ParentFromEntity;
+            [ReadOnly] public ComponentDataFromEntity<Parent> ParentFromEntity;
             [NativeDisableContainerSafetyRestriction]public ArchetypeChunkBufferType<ControlVertexData> VertexDataType;
             [ReadOnly] public ArchetypeChunkComponentType<ElementVertexPointerInMesh> VertexPointerInCanvasMeshType;
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
@@ -88,7 +89,7 @@ namespace DotsUI.Core
             UpdateColorVertices updateJob = new UpdateColorVertices()
             {
                 EntityType = GetArchetypeChunkEntityType(),
-                ParentFromEntity = GetComponentDataFromEntity<UIParent>(true),
+                ParentFromEntity = GetComponentDataFromEntity<Parent>(true),
                 VertexColorType = GetArchetypeChunkComponentType<VertexColorValue>(true),
                 VertexColorMultiplierType = GetArchetypeChunkComponentType<VertexColorMultiplier>(true),
                 VertexDataType = GetArchetypeChunkBufferType<ControlVertexData>(),

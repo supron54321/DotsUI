@@ -1,94 +1,67 @@
 using DotsUI.Core;
+using DotsUI.Core.Utils;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace DotsUI.Input
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
     [UpdateAfter(typeof(ControlsInputSystem))]
-    public class SelectableSystem : JobComponentSystem
+    public class SelectableSystem : PointerInputComponentSystem<Selectable>
     {
-        class SystemBarrier : EntityCommandBufferSystem
-        {
-
-        }
         private EntityQuery m_SelectableGroup;
-        private EntityQuery m_EventGroup;
 
-        private NativeHashMap<Entity, Entity> m_TargetToEvent;
-        private SystemBarrier m_Barrier;
+        private InputHandleBarrier m_Barrier;
+        // NativeHashMap is the best option since it checks if entity was already added to list and supports parallel writing.
+        // Unfortunately it doesn't support deallocation on job completion. We need persistent container to keep updated entities
 
-        protected override void OnCreateManager()
+        protected override void OnCreateInput()
         {
-            m_TargetToEvent = new NativeHashMap<Entity, Entity>(10, Allocator.Persistent);
-            m_Barrier = World.GetOrCreateSystem<SystemBarrier>();
-            m_EventGroup = GetEntityQuery(new EntityQueryDesc()
-            {
-                All = new ComponentType[]
-                {
-                    ComponentType.ReadOnly<PointerEvent>(),
-                    ComponentType.ReadOnly<PointerInputBuffer>()
-                }
-            });
+            m_Barrier = World.GetOrCreateSystem<InputHandleBarrier>();
             m_SelectableGroup = GetEntityQuery(new EntityQueryDesc()
             {
                 All = new ComponentType[]
                 {
+                    ComponentType.ReadWrite<Selectable>(), 
                     ComponentType.ReadOnly<SelectableColor>(),
                     ComponentType.ReadWrite<VertexColorValue>()
                 }
             });
+            RequireForUpdate(m_SelectableGroup);
         }
 
-        protected override void OnDestroyManager()
+        protected override void OnDestroyInput()
         {
-            m_TargetToEvent.Dispose();
         }
-        
-        
-        [BurstCompile]
-        struct CreateTargetToEventMap : IJobChunk
-        {
-            [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            [ReadOnly] public ArchetypeChunkComponentType<PointerEvent> EventType;
-            [WriteOnly] public NativeHashMap<Entity, Entity>.Concurrent TargetToEvent;
 
-            public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
-            {
-                var entityArray = chunk.GetNativeArray(EntityType);
-                var eventArray = chunk.GetNativeArray(EventType);
-                for (int i = 0; i < chunk.Count; i++)
-                {
-                    TargetToEvent.TryAdd(eventArray[i].Target, entityArray[i]);
-                }
-            }
-        }
-        
         [BurstCompile]
         struct SetColorValueJob : IJobChunk
         {
             [ReadOnly] public ArchetypeChunkComponentType<SelectableColor> SelectableColorType;
             public ArchetypeChunkComponentType<Selectable> SelectableType;
-            public ArchetypeChunkComponentType<VertexColorMultiplier> ColorMultiplierType;
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerInputType;
             [ReadOnly] public NativeHashMap<Entity, Entity> TargetToEvent;
+
+            // This is probably not the best idea to disable this restriction, since different selecatables can point to the same target
+            [NativeDisableParallelForRestriction] public ComponentDataFromEntity<VertexColorMultiplier> ColorMultiplierFromEntity;
+            public AddFlagComponentCommandBuffer.ParallelWriter ToUpdate;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
                 var selectableColorArray = chunk.GetNativeArray(SelectableColorType);
                 var selectableArray = chunk.GetNativeArray(SelectableType);
-                var colorArray = chunk.GetNativeArray(ColorMultiplierType);
                 var entityArray = chunk.GetNativeArray(EntityType);
-                
+
                 for (int i = 0; i < chunk.Count; i++)
                 {
                     var selectableState = selectableArray[i];
-                    
+
                     if (TargetToEvent.TryGetValue(entityArray[i], out Entity eventEntity))
                     {
                         var inputBuffer = PointerInputType[eventEntity];
@@ -110,81 +83,63 @@ namespace DotsUI.Input
                         }
                     }
 
-                    var currentColor = colorArray[i].Value;
-                    float4 newColor = currentColor;
-                    if ((selectableState.Value&SelectableState.Pressed) == SelectableState.Pressed)
+                    var target = selectableColorArray[i].Target;
+                    if (ColorMultiplierFromEntity.Exists(target))
                     {
-                        newColor = selectableColorArray[i].Pressed;
-                    }
-                    else if ((selectableState.Value&SelectableState.Selected) == SelectableState.Selected)
-                    {
-                        newColor = selectableColorArray[i].Selected;
-                    }
-                    else if ((selectableState.Value&SelectableState.Hovered) == SelectableState.Hovered)
-                    {
-                        newColor = selectableColorArray[i].Hover;
-                    }
-                    else
-                    {
-                        newColor = selectableColorArray[i].Normal;
-                    }
-
-                    if (!currentColor.Equals(newColor))
-                    {
-                        colorArray[i] = new VertexColorMultiplier()
+                        var currentColor = ColorMultiplierFromEntity[target].Value;
+                        float4 newColor = currentColor;
+                        if ((selectableState.Value & SelectableState.Pressed) == SelectableState.Pressed)
                         {
-                            Value = newColor
-                        };
+                            newColor = selectableColorArray[i].Pressed;
+                        }
+                        else if ((selectableState.Value & SelectableState.Selected) == SelectableState.Selected)
+                        {
+                            newColor = selectableColorArray[i].Selected;
+                        }
+                        else if ((selectableState.Value & SelectableState.Hovered) == SelectableState.Hovered)
+                        {
+                            newColor = selectableColorArray[i].Hover;
+                        }
+                        else
+                        {
+                            newColor = selectableColorArray[i].Normal;
+                        }
+
+                        if (!currentColor.Equals(newColor))
+                        {
+                            ColorMultiplierFromEntity[selectableColorArray[i].Target] = new VertexColorMultiplier()
+                            {
+                                Value = newColor
+                            };
+                        }
+
+                        ToUpdate.TryAdd(target);
+                        selectableArray[i] = selectableState;
                     }
 
-                    selectableArray[i] = selectableState;
                 }
             }
         };
-
-        //struct UpdateColorFlagging : IJob
-        //{
-        //    public NativeHashMap<Entity, int> UpdateEntities;
-        //    public EntityCommandBuffer CommandBuffer;
-
-        //    public void Execute()
-        //    {
-        //        UpdateEntities.GetKeyArray(Allocator.Temp);
-        //        CommandBuffer.AddComponent()
-        //    }
-        //}
-
-        protected override JobHandle OnUpdate(JobHandle inputDeps)
+        protected override JobHandle OnUpdateInput(JobHandle inputDeps, NativeHashMap<Entity, Entity> targetToEvent, BufferFromEntity<PointerInputBuffer> pointerBufferFromEntity)
         {
-            if (m_EventGroup.CalculateLength() > 0)
-            {
-                m_TargetToEvent.Clear();
-                var selectableColorType = GetArchetypeChunkComponentType<SelectableColor>(true);
-                var selectableType = GetArchetypeChunkComponentType<Selectable>();
-                var colorMultiplierType = GetArchetypeChunkComponentType<VertexColorMultiplier>();
-                var entityType = GetArchetypeChunkEntityType();
-                CreateTargetToEventMap createTargetToEvent = new CreateTargetToEventMap()
-                {
-                    EntityType = GetArchetypeChunkEntityType(),
-                    EventType = GetArchetypeChunkComponentType<PointerEvent>(true),
-                    TargetToEvent = m_TargetToEvent.ToConcurrent()
-                };
-                inputDeps = createTargetToEvent.Schedule(m_EventGroup, inputDeps);
-            
-                SetColorValueJob setJob = new SetColorValueJob()
-                {
-                    SelectableColorType = selectableColorType,
-                    SelectableType = selectableType,
-                    ColorMultiplierType = colorMultiplierType,
-                    EntityType = entityType,
-                    PointerInputType = GetBufferFromEntity<PointerInputBuffer>(),
-                    TargetToEvent = m_TargetToEvent,
-                };
-                inputDeps = setJob.Schedule(m_SelectableGroup, inputDeps);
-                inputDeps.Complete();
-                EntityManager.AddComponent(m_TargetToEvent.GetKeyArray(Allocator.Temp), typeof(UpdateElementColor));
-            }
+            var selectableColorType = GetArchetypeChunkComponentType<SelectableColor>(true);
+            var selectableType = GetArchetypeChunkComponentType<Selectable>();
+            var entityType = GetArchetypeChunkEntityType();
 
+            NativeHashMap<Entity, int> updateQueue = new NativeHashMap<Entity, int>(m_SelectableGroup.CalculateEntityCount(), Allocator.TempJob);
+            SetColorValueJob setJob = new SetColorValueJob()
+            {
+                SelectableColorType = selectableColorType,
+                SelectableType = selectableType,
+                ColorMultiplierFromEntity = GetComponentDataFromEntity<VertexColorMultiplier>(),
+                EntityType = entityType,
+                PointerInputType = pointerBufferFromEntity,
+                TargetToEvent = targetToEvent,
+                ToUpdate = m_Barrier.CreateAddFlagComponentCommandBuffer<UpdateElementColor>().AsParallelWriter()
+            };
+            inputDeps = setJob.Schedule(m_SelectableGroup, inputDeps);
+            m_Barrier.AddJobHandleForProducer(inputDeps);
+            inputDeps = updateQueue.Dispose(inputDeps);
             return inputDeps;
         }
     }

@@ -5,6 +5,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
 using System;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace DotsUI.Core
@@ -19,98 +20,61 @@ namespace DotsUI.Core
         {
             [ReadOnly]
             public float2 Dpi;
-            [ReadOnly]
-            public int ScreenWidth;
-            [ReadOnly]
-            public int ScreenHeight;
             [ReadOnly] public ArchetypeChunkComponentType<RectTransform> RectTransformType;
+            [ReadOnly] public ArchetypeChunkComponentType<CanvasScreenSize> CanvasSizeType;
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            [ReadOnly] public ArchetypeChunkBufferType<UIChild> ChildType;
+            [ReadOnly] public ArchetypeChunkBufferType<Child> ChildType;
             [ReadOnly] public ArchetypeChunkComponentType<CanvasConstantPhysicalSizeScaler> ConstantPhysicalScaler;
             [ReadOnly] public ArchetypeChunkComponentType<CanvasConstantPixelSizeScaler> ConstantPixelScaler;
-            [ReadOnly] public BufferFromEntity<UIChild> ChildFromEntity;
 
+            /*
+            [ReadOnly] public BufferFromEntity<UIChild> ChildrenFromEntity;
             [NativeDisableContainerSafetyRestriction]
-            public ComponentDataFromEntity<WorldSpaceRect> LocalToWorldFromEntity;
+            public ComponentDataFromEntity<WorldSpaceRect> WorldSpaceRectFromEntity;
             [NativeDisableContainerSafetyRestriction]
             public ComponentDataFromEntity<RectTransform> RectTransformFromEntity;
-            [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<RebuildElementMeshFlag> RebuildFlagType;
-            [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<ElementScale> ElementScaleType;
+            [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<RebuildElementMeshFlag> RebuildFlagFromEntity;
+            [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<ElementScale> ElementScaleFromEntity;
             [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<WorldSpaceMask> WorldSpaceMaskFromEntity;
             [ReadOnly] public ComponentDataFromEntity<RectMask> RectMaskFromEntity;
+            */
+            public HierarchyRebuildContext RebuildContext;
 
-
-            private void UpdateRectMask(Entity entity, WorldSpaceRect elementRect, ref WorldSpaceMask mask)
-            {
-                if (RectMaskFromEntity.Exists(entity))
-                {
-                    float2 newMin = math.max(mask.Min, elementRect.Min);
-                    float2 newMax = math.min(mask.Max, elementRect.Max);
-                    mask = new WorldSpaceMask
-                    {
-                        Min = newMin,
-                        Max = newMax
-                    };
-                }
-            }
-
-            private void UpdateTransform(ref WorldSpaceRect parentLocalToWorldSpaceRect, WorldSpaceMask currentMask, Entity entity, float2 scale, int jobIdx)
-            {
-                var childTransform = RectTransformFromEntity[entity];
-                float2 start = math.lerp(parentLocalToWorldSpaceRect.Min, parentLocalToWorldSpaceRect.Max, math.lerp(childTransform.AnchorMin, childTransform.AnchorMax, childTransform.Pivot)) + childTransform.Position * scale;
-                float2 anchorDiff = childTransform.AnchorMax - childTransform.AnchorMin;
-                float2 size = (parentLocalToWorldSpaceRect.Max - parentLocalToWorldSpaceRect.Min) * anchorDiff + childTransform.SizeDelta * scale;
-
-                float2 min = start - size * childTransform.Pivot;
-                float2 max = start + size * (new float2(1.0f, 1.0f) - childTransform.Pivot);
-
-                var childLocalToWorld = new WorldSpaceRect()
-                {
-                    Min = min,
-                    Max = max,
-                };
-                LocalToWorldFromEntity[entity] = childLocalToWorld;
-                ElementScaleType[entity] = new ElementScale() { Value = scale };
-                UpdateRectMask(entity, childLocalToWorld, ref currentMask);
-                WorldSpaceMaskFromEntity[entity] = currentMask;
-
-                if (RebuildFlagType.Exists(entity))
-                    RebuildFlagType[entity] = new RebuildElementMeshFlag()
-                    {
-                        Rebuild = true
-                    };
-                if (ChildFromEntity.Exists(entity))
-                {
-                    var children = ChildFromEntity[entity];
-                    for (int i = 0; i < children.Length; i++)
-                    {
-                        UpdateTransform(ref childLocalToWorld, currentMask, children[i].Value, scale, jobIdx);
-                    }
-                }
-            }
 
             public void Execute(ArchetypeChunk chunk, int index, int entityOffset)
             {
                 var chunkRectTransform = chunk.GetNativeArray(RectTransformType);
                 var entities = chunk.GetNativeArray(EntityType);
                 var chunkChildren = chunk.GetBufferAccessor(ChildType);
+                var canvasSizeArray = chunk.GetNativeArray(CanvasSizeType);
 
                 NativeArray<CanvasConstantPhysicalSizeScaler> physicalSizeArray = default;
                 bool useConstantPhysicalSize = chunk.Has(ConstantPhysicalScaler);
                 if (useConstantPhysicalSize)
                     physicalSizeArray = chunk.GetNativeArray(ConstantPhysicalScaler);
 
+                //HierarchyRebuildContext rebuildContext = new HierarchyRebuildContext()
+                //{
+                //    ChildrenFromEntity = RebuildContext.ChildrenFromEntity,
+                //    ElementScaleFromEntity = RebuildContext.ElementScaleFromEntity,
+                //    RebuildFlagFromEntity = RebuildFlagFromEntity,
+                //    RectMaskFromEntity = RectMaskFromEntity,
+                //    RectTransformFromEntity = RectTransformFromEntity,
+                //    WorldSpaceMaskFromEntity = WorldSpaceMaskFromEntity,
+                //    WorldSpaceRectFromEntity = WorldSpaceRectFromEntity
+                //};
+
                 for (int i = 0; i < chunk.Count; i++)
                 {
                     float2 scale = new float2(1.0f, 1.0f);
                     if (useConstantPhysicalSize)
-                        scale = Dpi*physicalSizeArray[i].Factor;
+                        scale = Dpi * physicalSizeArray[i].Factor;
                     var canvasRect = new WorldSpaceRect()
                     {
                         Min = chunkRectTransform[i].Position,
-                        Max = (chunkRectTransform[i].Position + new float2(ScreenWidth, ScreenHeight))
+                        Max = (chunkRectTransform[i].Position + canvasSizeArray[i].Value)
                     };
-                    LocalToWorldFromEntity[entities[i]] = canvasRect;
+                    RebuildContext.WorldSpaceRectFromEntity[entities[i]] = canvasRect;
 
                     var children = chunkChildren[i];
                     var parentLocalToWorld = canvasRect;
@@ -121,8 +85,9 @@ namespace DotsUI.Core
                     };
                     for (int j = 0; j < children.Length; j++)
                     {
-                        var childTransform = RectTransformFromEntity[children[j].Value];
-                        UpdateTransform(ref parentLocalToWorld, canvasMask, children[j].Value, scale, index);
+                        var childTransform = RebuildContext.RectTransformFromEntity[children[j].Value];
+                        RectTransformUtils.UpdateTransformRecursive(ref parentLocalToWorld, canvasMask, children[j].Value, scale, ref RebuildContext);
+                        //UpdateTransformRecursive(ref parentLocalToWorld, canvasMask, children[j].Value, scale);
                     }
                 }
             }
@@ -135,13 +100,14 @@ namespace DotsUI.Core
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<RectTransform>(),
-                    ComponentType.ReadOnly<UIChild>(),
+                    ComponentType.ReadOnly<CanvasScreenSize>(),
+                    ComponentType.ReadOnly<Child>(),
                     ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
                     typeof(WorldSpaceRect),
                 },
                 None = new ComponentType[]
                 {
-                    typeof(UIParent)
+                    typeof(Parent)
                 },
                 Any = new ComponentType[]
                 {
@@ -153,11 +119,10 @@ namespace DotsUI.Core
         }
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var rectTransformType = GetArchetypeChunkComponentType<RectTransform>(true);
             var entityType = GetArchetypeChunkEntityType();
-            var childType = GetArchetypeChunkBufferType<UIChild>(true);
-            var childFromEntity = GetBufferFromEntity<UIChild>(true);
-            var localToWorldFromEntity = GetComponentDataFromEntity<WorldSpaceRect>();
+            var childType = GetArchetypeChunkBufferType<Child>(true);
+            var childFromEntity = GetBufferFromEntity<Child>(true);
+            var worldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>();
             var rectTransformFromEntity = GetComponentDataFromEntity<RectTransform>(true);
             var rebuildFlagType = GetComponentDataFromEntity<RebuildElementMeshFlag>();
 
@@ -165,23 +130,25 @@ namespace DotsUI.Core
             var updateHierarchyJob = new UpdateHierarchy
             {
                 Dpi = new float2(dpi, dpi),
-                ScreenWidth = Screen.width,
-                ScreenHeight = Screen.height,
-                RectTransformType = rectTransformType,
+                RectTransformType = GetArchetypeChunkComponentType<RectTransform>(true),
+                CanvasSizeType = GetArchetypeChunkComponentType<CanvasScreenSize>(true),
                 EntityType = entityType,
                 ChildType = childType,
-                ChildFromEntity = childFromEntity,
-                LocalToWorldFromEntity = localToWorldFromEntity,
-                RectTransformFromEntity = rectTransformFromEntity,
-                RebuildFlagType = rebuildFlagType,
-                ElementScaleType = GetComponentDataFromEntity<ElementScale>(),
                 ConstantPhysicalScaler = GetArchetypeChunkComponentType<CanvasConstantPhysicalSizeScaler>(true),
                 ConstantPixelScaler = GetArchetypeChunkComponentType<CanvasConstantPixelSizeScaler>(true),
-                WorldSpaceMaskFromEntity = GetComponentDataFromEntity<WorldSpaceMask>(),
-                RectMaskFromEntity = GetComponentDataFromEntity<RectMask>(true)
+                RebuildContext = new HierarchyRebuildContext()
+                {
+                    ChildrenFromEntity = childFromEntity,
+                    WorldSpaceRectFromEntity = worldSpaceRectFromEntity,
+                    RectTransformFromEntity = rectTransformFromEntity,
+                    RebuildFlagFromEntity = rebuildFlagType,
+                    ElementScaleFromEntity = GetComponentDataFromEntity<ElementScale>(),
+                    WorldSpaceMaskFromEntity = GetComponentDataFromEntity<WorldSpaceMask>(),
+                    RectMaskFromEntity = GetComponentDataFromEntity<RectMask>(true)
+                }
+
             };
             var updateHierarchyJobHandle = updateHierarchyJob.Schedule(m_Group, inputDeps);
-            updateHierarchyJobHandle.Complete();
             return updateHierarchyJobHandle;
         }
     }
