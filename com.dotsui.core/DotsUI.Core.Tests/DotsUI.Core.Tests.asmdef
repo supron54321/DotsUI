@@ -10,7 +10,9 @@
         "GUID:a5baed0c9693541a5bd947d336ec7659"
     ],
     "includePlatforms": [],
-    "excludePlatforms": [],
+    "excludePlatforms": [
+        "Editor"
+    ],
     "allowUnsafeCode": true,
     "overrideReferences": true,
     "precompiledReferences": [
