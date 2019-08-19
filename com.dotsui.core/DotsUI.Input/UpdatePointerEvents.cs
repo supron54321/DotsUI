@@ -232,9 +232,10 @@ namespace DotsUI.Input
                 });
             }
 
-            if (!propagateParent)
+            if (!propagateParent || IsConsumableType(type))
                 return;
             Entity parent = GetParent(target);
+
             while (parent != default)
             {
                 if (!ReceiverFromEntity.Exists(parent))
@@ -265,6 +266,10 @@ namespace DotsUI.Input
                 case PointerEventType.Click:
                 case PointerEventType.Selected:
                 case PointerEventType.Deselected:
+                case PointerEventType.BeginDrag:
+                case PointerEventType.EndDrag:
+                case PointerEventType.Drag:
+                case PointerEventType.Drop:
                     return true;
                 default:
                     return false;

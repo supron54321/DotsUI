@@ -174,7 +174,8 @@ namespace DotsUI.Controls
                         new float2(1.0f, handleTransform.AnchorMin.y + scrollBarSize.y);
                     WorldSpaceRect handleRect = RectTransformUtils.CalculateWorldSpaceRect(areaRect, ElementScaleFromEntity[scrollBarEntity].Value,
                         handleTransform);
-                    scrollBar.DragSensitivity = 1.0f / (areaRect.Size.y - handleRect.Size.y);
+                    scrollBar.HandleDragSensitivity = 1.0f / (areaRect.Size.y - handleRect.Size.y);
+                    scrollBar.RectDragSensitivity = scrollBar.HandleDragSensitivity / ((transforms.ContentRect.Size.y - transforms.ViewportRect.Size.y) / (areaRect.Size.y - handleRect.Size.y));
                     transforms.ContentRect.Min.y = transforms.ViewportRect.Min.y + scrollBar.Value * moveRange.y;
                     transforms.ContentRect.Max.y = transforms.ContentRect.Min.y + contentSize.y;
                 }
@@ -193,7 +194,8 @@ namespace DotsUI.Controls
                         new float2(handleTransform.AnchorMin.x + scrollBarSize.x, 1.0f);
                     WorldSpaceRect handleRect = RectTransformUtils.CalculateWorldSpaceRect(areaRect, ElementScaleFromEntity[scrollBarEntity].Value,
                         handleTransform);
-                    scrollBar.DragSensitivity = 1.0f / (areaRect.Size.x - handleRect.Size.x);
+                    scrollBar.HandleDragSensitivity = 1.0f / (areaRect.Size.x - handleRect.Size.x);
+                    scrollBar.RectDragSensitivity = scrollBar.HandleDragSensitivity / ((transforms.ContentRect.Size.x - transforms.ViewportRect.Size.x) / (areaRect.Size.x - handleRect.Size.x));
                     transforms.ContentRect.Min.x = transforms.ViewportRect.Min.x + scrollBar.Value * moveRange.x;
                     transforms.ContentRect.Max.x = transforms.ContentRect.Min.x + contentSize.x;
                 }

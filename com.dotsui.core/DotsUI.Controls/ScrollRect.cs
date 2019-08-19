@@ -30,7 +30,11 @@ namespace DotsUI.Controls
         /// <summary>
         /// Calculated automatically in ScrollRectSystem
         /// </summary>
-        public float DragSensitivity;
+        public float HandleDragSensitivity;
+        /// <summary>
+        /// Calculated automatically in ScrollRectSystem
+        /// </summary>
+        public float RectDragSensitivity;
     }
 
     public struct ScrollBarHandle : IComponentData

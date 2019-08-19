@@ -38,7 +38,6 @@ namespace DotsUI.Controls
         {
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             public ArchetypeChunkComponentType<ScrollBar> ScrollBarType;
-            [ReadOnly] public ArchetypeChunkComponentType<WorldSpaceRect> ScrollBarRectType;
             [ReadOnly] public NativeHashMap<Entity, Entity> TargetToEvent;
             [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerBufferFromEntity;
             [ReadOnly] public ComponentDataFromEntity<ScrollRect> ScrollRectFromEntity;
@@ -48,7 +47,6 @@ namespace DotsUI.Controls
             {
                 var scrollBarArray = chunk.GetNativeArray(ScrollBarType);
                 var entityArray = chunk.GetNativeArray(EntityType);
-                var rectArray = chunk.GetNativeArray(ScrollBarRectType);
 
                 for (int i = 0; i < chunk.Count; i++)
                 {
@@ -70,14 +68,14 @@ namespace DotsUI.Controls
                     float value = scrollBar.Value;
                     if (scrollRect.HorizontalBar == scrollBarEntity)
                     {
-                        value = math.saturate(scrollBar.Value + pointerInput.EventData.Delta.x * scrollBar.DragSensitivity);
+                        value = math.saturate(scrollBar.Value + pointerInput.EventData.Delta.x * scrollBar.HandleDragSensitivity);
                     }
                     else if (scrollRect.VerticalBar == scrollBarEntity)
                     {
-                        value = math.saturate(scrollBar.Value + pointerInput.EventData.Delta.y * scrollBar.DragSensitivity);
+                        value = math.saturate(scrollBar.Value + pointerInput.EventData.Delta.y * scrollBar.HandleDragSensitivity);
                     }
 
-                    if (math.abs(value - scrollBar.Value) >= scrollBar.DragSensitivity)
+                    if (math.abs(value - scrollBar.Value) >= scrollBar.HandleDragSensitivity)
                     {
                         AddFlagCommandBuff.TryAdd(scrollBarEntity);
                     }
@@ -89,20 +87,6 @@ namespace DotsUI.Controls
             }
         }
 
-        //struct MarkForRebuildJob : IJob
-        //{
-        //    public EntityCommandBuffer CommandBuffer;
-        //    [ReadOnly] public NativeHashMap<Entity, int> MarkForRebuild;
-
-
-        //    public void Execute()
-        //    {
-        //        var entityArray = MarkForRebuild.GetKeyArray(Allocator.Temp);
-        //        for(int i = 0; i < entityArray.Length; i++)
-        //            CommandBuffer.AddComponent<DirtyElementFlag>(entityArray[i]);
-        //    }
-        //}
-
         protected override JobHandle OnUpdateInput(JobHandle inputDeps, NativeHashMap<Entity, Entity> targetToEvent, BufferFromEntity<PointerInputBuffer> pointerBufferFromEntity)
         {
             ScrollBarHandleJob scrollBarJob = new ScrollBarHandleJob()
@@ -111,7 +95,6 @@ namespace DotsUI.Controls
                 ScrollBarType = GetArchetypeChunkComponentType<ScrollBar>(),
                 TargetToEvent = targetToEvent,
                 PointerBufferFromEntity = pointerBufferFromEntity,
-                ScrollBarRectType = GetArchetypeChunkComponentType<WorldSpaceRect>(true),
                 ScrollRectFromEntity = GetComponentDataFromEntity<ScrollRect>(true),
                 AddFlagCommandBuff = m_Barrier.CreateAddFlagComponentCommandBuffer<DirtyElementFlag>().AsParallelWriter()
             };
