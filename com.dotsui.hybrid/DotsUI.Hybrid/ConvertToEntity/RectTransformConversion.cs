@@ -27,6 +27,7 @@ namespace DotsUI.Hybrid
 
         protected override void OnUpdate()
         {
+            return; // disabled until unity resolve crash issue (Case 1175841)
             Entities.ForEach((RectTransform transform) => { Convert(transform); });
             Entities.ForEach((Canvas canvas) => { ConvertCanvas(canvas); });
             Entities.ForEach((CanvasScaler scaler) => { ConvertScaler(scaler); });

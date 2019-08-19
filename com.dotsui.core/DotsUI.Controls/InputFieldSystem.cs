@@ -79,8 +79,8 @@ namespace DotsUI.Controls
         }
         private struct EventProcessor : IJobChunk
         {
-            [ReadOnly] public BufferFromEntity<KeyboardInputBuffer> KeyboardInputBufferType;
-            [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerInputBufferType;
+            [ReadOnly] public BufferFromEntity<KeyboardInputBuffer> KeyboardInputBufferFromEntity;
+            [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerInputBufferFromEntity;
             [ReadOnly] public ComponentDataFromEntity<InputFieldCaretEntityLink> InputFieldCaretLinkFromEntity;
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             public ArchetypeChunkComponentType<InputFieldCaretState> CaretStateType;
@@ -110,7 +110,7 @@ namespace DotsUI.Controls
                     {
                         DynamicBuffer<PointerInputBuffer> pointerInputBuffer = default;
                         if (isPointerInputPending)
-                            pointerInputBuffer = PointerInputBufferType[pointerEventEntity];
+                            pointerInputBuffer = PointerInputBufferFromEntity[pointerEventEntity];
 
                         var textData = TextDataFromEntity[thisInputField.Target];
                         int oldTextLen = textData.Length;
@@ -123,7 +123,7 @@ namespace DotsUI.Controls
                         if (isKeyboardInputPending)
                         {
                             CommandBuff.AddComponent(chunkIndex, thisInputField.Target, new DirtyElementFlag());
-                            caretStateAccessor[i] = ProcessInput(inputFieldEntity, KeyboardInputBufferType[eventEntity], textData, caretStateAccessor[i], chunkIndex);
+                            caretStateAccessor[i] = ProcessInput(inputFieldEntity, KeyboardInputBufferFromEntity[eventEntity], textData, caretStateAccessor[i], chunkIndex);
                             if (thisInputField.Placeholder != default)
                             {
                                 if (textData.Length > 0)
@@ -315,8 +315,8 @@ namespace DotsUI.Controls
                     inputDeps = createTargetToPointerEvent.Schedule(m_PointerEventGroup, inputDeps);
                     EventProcessor inputEventProcessor = new EventProcessor()
                     {
-                        KeyboardInputBufferType = GetBufferFromEntity<KeyboardInputBuffer>(true),
-                        PointerInputBufferType = GetBufferFromEntity<PointerInputBuffer>(true),
+                        KeyboardInputBufferFromEntity = GetBufferFromEntity<KeyboardInputBuffer>(true),
+                        PointerInputBufferFromEntity = GetBufferFromEntity<PointerInputBuffer>(true),
                         InputFieldCaretLinkFromEntity = GetComponentDataFromEntity<InputFieldCaretEntityLink>(true),
                         EntityType = entityType,
                         CaretStateType = GetArchetypeChunkComponentType<InputFieldCaretState>(),
