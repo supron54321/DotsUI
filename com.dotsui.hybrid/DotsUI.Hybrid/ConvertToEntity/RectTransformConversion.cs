@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DotsUI.Core;
+using TMPro;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,33 +30,131 @@ namespace DotsUI.Hybrid
 
         protected override void OnUpdate()
         {
-            return; // disabled until unity resolve crash issue (Case 1175841)
             Entities.ForEach((RectTransform transform) => { Convert(transform); });
             Entities.ForEach((Canvas canvas) => { ConvertCanvas(canvas); });
             Entities.ForEach((CanvasScaler scaler) => { ConvertScaler(scaler); });
-            Entities.ForEach((Image image) => { ConvertImage(image); });
+            Entities.ForEach((Image image) => { ConvertImage(image); ConvertGraphic(image); });
+            Entities.ForEach((Button selectable) => { ConvertButton(selectable); ConvertSelectable(selectable); });
+            Entities.ForEach((TMP_InputField selectable) => { ConvertInputField(selectable); ConvertSelectable(selectable); });
+            Entities.ForEach((TextMeshProUGUI tmp) => { ConvertTextMeshPro(tmp); ConvertGraphic(tmp); });
+        }
+
+        private void ConvertButton(Button button)
+        {
+            var entity = GetPrimaryEntity(button);
+            DstEntityManager.AddComponent(entity, typeof(Controls.Button));
+        }
+
+        private void ConvertInputField(TMP_InputField inputField)
+        {
+            var entity = GetPrimaryEntity(inputField);
+            DstEntityManager.AddComponentData(entity, new DotsUI.Input.KeyboardInputReceiver());
+            DstEntityManager.AddBuffer<DotsUI.Input.KeyboardInputBuffer>(entity);
+            Entity target = TryGetPrimaryEntity(inputField.targetGraphic?.rectTransform);
+            DstEntityManager.AddComponentData(entity, new DotsUI.Controls.InputField()
+            {
+                Target = target
+            });
+            DstEntityManager.AddComponentData(entity, new DotsUI.Controls.InputFieldCaretState()
+            {
+                CaretPosition = 0
+            });
+        }
+
+        private void ConvertSelectable(Selectable selectable)
+        {
+            var entity = GetPrimaryEntity(selectable);
+            DstEntityManager.AddComponent(entity, typeof(DotsUI.Input.Selectable));
+            var colors = selectable.colors;
+            Entity target = TryGetPrimaryEntity(selectable.targetGraphic?.rectTransform);
+            DstEntityManager.AddComponentData(entity, new DotsUI.Input.SelectableColor()
+            {
+                Normal = colors.normalColor.ToFloat4(),
+                Hover = colors.highlightedColor.ToFloat4(),
+                Pressed = colors.pressedColor.ToFloat4(),
+                Selected = colors.selectedColor.ToFloat4(),
+                Disabled = colors.disabledColor.ToFloat4(),
+                TransitionTime = colors.fadeDuration,
+                Target = target
+            });
+
+            var pointerInputReceiver = GetOrAddComponent<Input.PointerInputReceiver>(DstEntityManager, entity);
+            pointerInputReceiver.ListenerTypes |= Input.PointerEventType.SelectableGroup;
+            DstEntityManager.SetComponentData(entity, pointerInputReceiver);
+        }
+
+        private void ConvertTextMeshPro(TextMeshProUGUI tmp)
+        {
+            var entity = GetPrimaryEntity(tmp);
+            if (tmp.font == null)
+            {
+                Debug.LogError($"TextMeshProConverter - font asset cannot be null reference. Object: {tmp}", tmp);
+                return;
+            }
+
+            if (!TryGetAssetEntity(new LegacyTextFontAsset{ Asset = tmp.font, FontMaterial = tmp.font.material }, out var fontAsset))
+            {
+                fontAsset = TextUtils.CreateFontAssetFromTmp(DstEntityManager, tmp.font);
+            }
+            DstEntityManager.AddComponentData(entity, new TextRenderer()
+            {
+                Font = fontAsset,
+                Size = tmp.fontSize,
+                Alignment = tmp.alignment,
+                Bold = (tmp.fontStyle & FontStyles.Bold) == FontStyles.Bold,
+                Italic = (tmp.fontStyle & FontStyles.Italic) == FontStyles.Italic
+            });
+            var textBuffer = DstEntityManager.AddBuffer<TextData>(entity);
+            var content = tmp.text;
+            textBuffer.ResizeUninitialized(content.Length);
+            unsafe
+            {
+                fixed (char* textPtr = content)
+                    UnsafeUtility.MemCpy(textBuffer.GetUnsafePtr(), textPtr, content.Length * sizeof(char));
+            }
+            DstEntityManager.AddBuffer<ControlVertexData>(entity);
+            DstEntityManager.AddBuffer<ControlVertexIndex>(entity);
+            DstEntityManager.AddComponent(entity, typeof(RebuildElementMeshFlag));
+        }
+
+        private void ConvertGraphic(Graphic graphic)
+        {
+            var entity = GetPrimaryEntity(graphic);
+            DstEntityManager.AddComponentData(entity, new VertexColorValue()
+            {
+                Value = graphic.color.ToFloat4()
+            });
+            DstEntityManager.AddComponentData(entity, new VertexColorMultiplier()
+            {
+                Value = new float4(1.0f, 1.0f, 1.0f, 1.0f)
+            });
+            DstEntityManager.AddComponent(entity, typeof(ElementVertexPointerInMesh));
+        }
+
+        bool TryGetAssetEntity<T>(T queryFilter, out Entity entity) where T : struct, ISharedComponentData
+        {
+            entity = default;
+            var assetQuery = DstEntityManager.CreateEntityQuery(ComponentType.ReadOnly<T>());
+            assetQuery.SetFilter(queryFilter);
+            if (assetQuery.CalculateEntityCount() == 0)
+                return false;
+            using (var assetEntityArray = assetQuery.ToEntityArray(Allocator.TempJob))
+                entity = assetEntityArray[0];
+            return true;
         }
 
         private void ConvertImage(Image image)
         {
-            var assetQuery = DstEntityManager.CreateEntityQuery(ComponentType.ReadOnly<SpriteAsset>());
             var entity = GetPrimaryEntity(image);
             var sprite = image.sprite ?? m_DefaultSprite;
             var asset = new SpriteAsset()
             {
                 Value = sprite,
             };
-            assetQuery.SetFilter(asset);
-            Entity assetEntity;
-            if (assetQuery.CalculateEntityCount() == 0)
+            if (!TryGetAssetEntity(asset, out var assetEntity))
             {
                 assetEntity = DstEntityManager.CreateEntity(typeof(SpriteAsset), typeof(SpriteVertexData));
                 DstEntityManager.SetSharedComponentData(assetEntity, new SpriteAsset { Value = sprite });
-            }
-            else
-            {
-                using (var assetEntityArray = assetQuery.ToEntityArray(Allocator.TempJob))
-                    assetEntity = assetEntityArray[0];
             }
             SpriteImage spriteImage = new SpriteImage
             {
@@ -118,6 +219,10 @@ namespace DotsUI.Hybrid
             {
                 Target = proxy
             });
+            DstEntityManager.AddComponentData(entity, new CanvasScreenSize
+            {
+                Value = new int2(canvas.worldCamera.pixelWidth, canvas.worldCamera.pixelHeight)
+            });
         }
 
         private void Convert(RectTransform transform)
@@ -139,6 +244,13 @@ namespace DotsUI.Hybrid
             DstEntityManager.RemoveComponent(entity, typeof(Translation));
             DstEntityManager.RemoveComponent(entity, typeof(Rotation));
             DstEntityManager.RemoveComponent(entity, typeof(NonUniformScale));
+        }
+        static TComponent GetOrAddComponent<TComponent>(EntityManager mgr, Entity entity) where TComponent : struct, IComponentData
+        {
+            if (mgr.HasComponent<TComponent>(entity))
+                return mgr.GetComponentData<TComponent>(entity);
+            mgr.AddComponent<TComponent>(entity);
+            return default;
         }
     }
 }

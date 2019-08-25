@@ -277,7 +277,7 @@ namespace DotsUI.Hybrid
                 unityMesh.UploadMeshData(false);
             }
 
-            using (new ProfilerSample("BuildCommangBuffer"))
+            using (new ProfilerSample("BuildCommandBuffer"))
             {
                 canvasCommandBuffer.Clear();
                 //canvasCommandBuffer.ClearRenderTarget(true, true, UnityEngine.Color.black);
@@ -312,7 +312,7 @@ namespace DotsUI.Hybrid
                 }
                 else if (subMesh.MaterialType == SubMeshType.Text)
                 {
-                    var fontMaterial = EntityManager.GetSharedComponentData<LegacyTextFontMaterial>(subMesh.MaterialId).FontMaterial;
+                    var fontMaterial = EntityManager.GetSharedComponentData<LegacyTextFontAsset>(subMesh.MaterialId).FontMaterial;
                     m_TemporaryBlock.SetTexture("_MainTex", fontMaterial.mainTexture);
                     return fontMaterial;
                 }
