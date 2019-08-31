@@ -26,6 +26,10 @@ namespace DotsUI.Hybrid
             base.OnCreate();
 
             m_DefaultSprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0.0f, 0.0f, 0.0f, 0.0f), Vector2.zero);
+            UnityEngine.Rendering.RenderPipelineManager.endFrameRendering += (i1, i2) =>
+            {
+                Debug.Log("TEST");
+            };
         }
 
         protected override void OnUpdate()
@@ -37,6 +41,46 @@ namespace DotsUI.Hybrid
             Entities.ForEach((Button selectable) => { ConvertButton(selectable); ConvertSelectable(selectable); });
             Entities.ForEach((TMP_InputField selectable) => { ConvertInputField(selectable); ConvertSelectable(selectable); });
             Entities.ForEach((TextMeshProUGUI tmp) => { ConvertTextMeshPro(tmp); ConvertGraphic(tmp); });
+            Entities.ForEach((ScrollRect scrollRect) => { ConvertScrollRect(scrollRect); });
+            Entities.ForEach((Scrollbar scrollBar) => { ConvertScrollBar(scrollBar); ConvertSelectable(scrollBar); });
+        }
+
+        private void ConvertScrollBar(Scrollbar scrollBar)
+        {
+            var entity = GetPrimaryEntity(scrollBar);
+            var scrollHandle = GetPrimaryEntity(scrollBar.handleRect);
+            DstEntityManager.AddComponentData(entity, new DotsUI.Controls.ScrollBar()
+            {
+                ScrollHandle = scrollHandle,
+                Value = scrollBar.value,
+                ParentScrollRect = GetPrimaryEntity(scrollBar.GetComponentsInParent<ScrollRect>(true)[0])  // temporary workaround for inactive transforms
+            });
+            DstEntityManager.AddComponentData(entity, new Controls.ScrollBarHandle()
+            {
+
+            });
+            var pointerInputReceiver = GetOrAddComponent<Input.PointerInputReceiver>(DstEntityManager, entity);
+            pointerInputReceiver.ListenerTypes |= Input.PointerEventType.BeginDrag | Input.PointerEventType.Drag |
+                                                  Input.PointerEventType.EndDrag;
+            DstEntityManager.SetComponentData(entity, pointerInputReceiver);
+        }
+
+        private void ConvertScrollRect(ScrollRect scrollRect)
+        {
+            var entity = GetPrimaryEntity(scrollRect);
+            DstEntityManager.AddComponentData(entity, new DotsUI.Controls.ScrollRect()
+            {
+                Content = GetPrimaryEntity(scrollRect.content),
+                Viewport = GetPrimaryEntity(scrollRect.viewport),
+                HorizontalBar = GetPrimaryEntity(scrollRect.horizontalScrollbar),
+                VerticalBar = GetPrimaryEntity(scrollRect.verticalScrollbar),
+                HorizontalBarSpacing = scrollRect.horizontalScrollbarSpacing,
+                VerticalBarSpacing = scrollRect.verticalScrollbarSpacing
+            });
+            var pointerInputReceiver = GetOrAddComponent<Input.PointerInputReceiver>(DstEntityManager, entity);
+            pointerInputReceiver.ListenerTypes |= Input.PointerEventType.BeginDrag | Input.PointerEventType.Drag |
+                                                  Input.PointerEventType.EndDrag;
+            DstEntityManager.SetComponentData(entity, pointerInputReceiver);
         }
 
         private void ConvertButton(Button button)
