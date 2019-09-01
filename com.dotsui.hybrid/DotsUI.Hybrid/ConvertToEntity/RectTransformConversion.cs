@@ -12,6 +12,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
 using RectTransform = UnityEngine.RectTransform;
 
@@ -26,9 +27,11 @@ namespace DotsUI.Hybrid
             base.OnCreate();
 
             m_DefaultSprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0.0f, 0.0f, 0.0f, 0.0f), Vector2.zero);
+            CommandBuffer cmdBuff = new CommandBuffer();
+            cmdBuff.name = "TESTBUFF";
             UnityEngine.Rendering.RenderPipelineManager.endFrameRendering += (i1, i2) =>
             {
-                Debug.Log("TEST");
+                cmdBuff.Clear();
             };
         }
 
@@ -252,8 +255,26 @@ namespace DotsUI.Hybrid
             DstEntityManager.AddBuffer<MeshVertex>(entity);
             DstEntityManager.AddBuffer<MeshVertexIndex>(entity);
             DstEntityManager.AddBuffer<SubMeshInfo>(entity);
-            if (canvas.renderMode != RenderMode.ScreenSpaceCamera)
+            if (canvas.renderMode == RenderMode.WorldSpace)
                 throw new InvalidOperationException($"Canvas ({canvas}) render mode ({canvas.renderMode}) is not supported yet");
+
+            if (canvas.renderMode == RenderMode.ScreenSpaceCamera)
+                SetUpScreenSpaceCamera(canvas, entity);
+            else if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                SetUpScreenSpaceOverlay(canvas, entity);
+        }
+        private void SetUpScreenSpaceOverlay(Canvas canvas, Entity entity)
+        {
+            DstEntityManager.AddComponentData(entity, new CanvasScreenSpaceOverlay());
+            DstEntityManager.AddComponentData(entity, new CanvasScreenSize
+            {
+                Value = new int2(Screen.width, Screen.height)
+            });
+        }
+
+
+        private void SetUpScreenSpaceCamera(Canvas canvas, Entity entity)
+        {
             if (canvas.worldCamera == null)
                 throw new InvalidOperationException($"Target camera is null or destroyed. Canvas {canvas}");
             var proxy = canvas.worldCamera.GetComponent<CameraImageRenderProxy>();

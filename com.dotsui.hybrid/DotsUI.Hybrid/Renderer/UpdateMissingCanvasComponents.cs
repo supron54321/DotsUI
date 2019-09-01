@@ -25,6 +25,7 @@ namespace DotsUI.Hybrid
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
                     ComponentType.ReadOnly<CanvasTargetRenderTexture>(),
+                    ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(), 
                 },
                 None = new[]
                 {
@@ -37,6 +38,7 @@ namespace DotsUI.Hybrid
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
                     ComponentType.ReadOnly<CanvasTargetRenderTexture>(),
+                    ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(),
                 },
                 None = new[]
                 {

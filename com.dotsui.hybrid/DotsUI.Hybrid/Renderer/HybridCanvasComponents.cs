@@ -87,4 +87,6 @@ namespace DotsUI.Hybrid
             return (Target != null ? Target.GetHashCode() : 0);
         }
     }
+
+    public struct CanvasScreenSpaceOverlay : IComponentData { }
 }

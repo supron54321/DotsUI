@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace DotsUI.Input
 {
@@ -28,14 +28,21 @@ namespace DotsUI.Input
         public PointerButton Button;
     }
 
-    /// <summary>
-    /// TODO: pointer position support
-    /// </summary>
+    public enum NativePointerId
+    {
+        Mouse = 0,
+        TouchFinger0 = 1,
+        TouchFinger1 = 2,
+        TouchFinger2 = 3,
+        TouchFinger3 = 4,
+        TouchFinger4 = 5
+    }
+
     public struct NativePointerState : IBufferElementData
     {
-        public int PointerId;
-        public Vector2 Position;
-        public Vector2 Delta;
+        public NativePointerId PointerId;
+        public float2 Position;
+        public float2 Delta;
     }
 
     public struct NativeKeyboardInputEvent : IBufferElementData

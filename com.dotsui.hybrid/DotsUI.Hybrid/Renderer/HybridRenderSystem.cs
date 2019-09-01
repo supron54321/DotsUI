@@ -55,6 +55,7 @@ namespace DotsUI.Hybrid
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
                     ComponentType.ReadOnly<CanvasTargetRenderTexture>(),
+                    ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(),
                 }
             });
             m_UpdateVerticesOnlyGroup = GetEntityQuery(new EntityQueryDesc()
@@ -73,6 +74,7 @@ namespace DotsUI.Hybrid
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
                     ComponentType.ReadOnly<CanvasTargetRenderTexture>(),
+                    ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(),
                 },
                 None = new ComponentType[]
                 {
@@ -89,6 +91,7 @@ namespace DotsUI.Hybrid
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
                     ComponentType.ReadOnly<CanvasTargetRenderTexture>(),
+                    ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(),
                 }
             });
             m_DefaultMaterial = Material.Instantiate(Resources.Load<Material>("DotsUIDefaultMaterial"));
@@ -169,7 +172,7 @@ namespace DotsUI.Hybrid
                     }
                 }
                 layerEntity.Dispose();
-                EntityManager.RemoveComponent<RebuildCanvasHierarchyFlag>(m_UpdateMeshAndCommandBufferGroup);
+                //EntityManager.RemoveComponent<RebuildCanvasHierarchyFlag>(m_UpdateMeshAndCommandBufferGroup);
             }
 
             if (m_UpdateVerticesOnlyGroup.CalculateEntityCount() > 0)
@@ -280,7 +283,6 @@ namespace DotsUI.Hybrid
             using (new ProfilerSample("BuildCommandBuffer"))
             {
                 canvasCommandBuffer.Clear();
-                //canvasCommandBuffer.ClearRenderTarget(true, true, UnityEngine.Color.black);
                 canvasCommandBuffer.SetProjectionMatrix(Matrix4x4.Ortho(0.0f, Screen.width, 0.0f, Screen.height, -100.0f, 100.0f));
                 canvasCommandBuffer.SetViewMatrix(Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one));
                 for (int i = 0; i < unityMesh.subMeshCount; i++)

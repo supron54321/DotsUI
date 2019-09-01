@@ -71,8 +71,8 @@ namespace DotsUI.Core
                         scale = Dpi * physicalSizeArray[i].Factor;
                     var canvasRect = new WorldSpaceRect()
                     {
-                        Min = chunkRectTransform[i].Position,
-                        Max = (chunkRectTransform[i].Position + canvasSizeArray[i].Value)
+                        Min = float2.zero,//chunkRectTransform[i].Position,
+                        Max = canvasSizeArray[i].Value//(chunkRectTransform[i].Position + canvasSizeArray[i].Value)
                     };
                     RebuildContext.WorldSpaceRectFromEntity[entities[i]] = canvasRect;
 

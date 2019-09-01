@@ -34,7 +34,6 @@ namespace DotsUI.Core
         /// </summary>
         public int Value;
     }
-
     /// <summary>
     /// 16 seems like a quite big buffer, but it's enough to store 9-slice sprite vertices.
     /// It is the most common sprite type used in UI. I noticed performance increase compared to smaller buffers

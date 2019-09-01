@@ -22,7 +22,6 @@ namespace DotsUI.Hybrid
                 All = new[]
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
-                    //ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
                     ComponentType.ReadWrite<CanvasScreenSize>(),
                 }
             });
@@ -55,7 +54,6 @@ namespace DotsUI.Hybrid
                             sizeArray[i] = canvasSize;
                         }
                     }
-                    //chunk.SetChunkComponentData(sizeType, canvasSize);
                 }
                 while(commandBuffer.TryDequeue(out var entity))
                     EntityManager.AddComponent<RebuildCanvasHierarchyFlag>(entity);
