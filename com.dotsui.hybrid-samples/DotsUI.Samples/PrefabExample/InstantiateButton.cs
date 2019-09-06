@@ -4,12 +4,11 @@ using DotsUI.Hybrid;
 using Unity.Entities;
 using UnityEngine;
 
-public class InstantiateButton : MonoBehaviour, IRectTransformToEntity
+public class InstantiateButton : MonoBehaviour, IConvertGameObjectToEntity
 {
-    public void ConvertToEntity(Entity entity, RectTransformToEntity rectTransformToEntity, Dictionary<Object, Entity> assetToEntity,
-        EntityManager mgr)
+    public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem)
     {
-        mgr.AddComponent(entity, typeof(InstantiateButtonComponent));
+        dstManager.AddComponent(entity, typeof(InstantiateButtonComponent));
     }
 }
 

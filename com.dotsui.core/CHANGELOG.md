@@ -4,6 +4,10 @@
 
 ## [0.3.0] - 2019-09-xx
 
+### Added
+
+* Added support for ConvertToEntity
+* Added support for Screen Space- Overlay canvas rendering mode
 
 
 ## [0.2.0] - 2019-08-19
@@ -12,6 +16,10 @@
 
 * Added drag & drop support
 * Added ScrollRect
+
+### Fixes
+
+* Removed unnecessary sync point form input system
 
 ### Changes
 

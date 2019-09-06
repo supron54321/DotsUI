@@ -151,7 +151,6 @@ namespace DotsUI.Input
             var pointerReceiverFromEntity = GetComponentDataFromEntity<PointerInputReceiver>(true);
 
             var stateComponentFromEntity = GetComponentDataFromEntity<InputSystemState>();
-            var selectableFromEntity = GetComponentDataFromEntity<Selectable>();
             var stateEntity = GetSingletonEntity<InputSystemState>();
 
             NativeArray<Entity> perCanvasHits =

@@ -15,6 +15,15 @@ using UnityEngine.Rendering;
 
 namespace DotsUI.Hybrid
 {
+    internal struct CanvasLayer : IComparable<CanvasLayer>
+    {
+        public int SortId;
+        public Entity CanvasEntity;
+        public int CompareTo(CanvasLayer other)
+        {
+            return SortId.CompareTo(other.SortId);
+        }
+    }
     [UpdateInGroup(typeof(RenderSystemGroup))]
     class HybridRenderSystem : ComponentSystem
     {
@@ -25,16 +34,6 @@ namespace DotsUI.Hybrid
         private MaterialPropertyBlock m_TemporaryBlock = new MaterialPropertyBlock();
         private VertexAttributeDescriptor[] m_MeshDescriptors;
 
-
-        private struct CanvasLayer : IComparable<CanvasLayer>
-        {
-            public int SortId;
-            public Entity CanvasEntity;
-            public int CompareTo(CanvasLayer other)
-            {
-                return SortId.CompareTo(other.SortId);
-            }
-        }
 
 
         protected override void OnCreate()
@@ -172,13 +171,11 @@ namespace DotsUI.Hybrid
                     }
                 }
                 layerEntity.Dispose();
-                //EntityManager.RemoveComponent<RebuildCanvasHierarchyFlag>(m_UpdateMeshAndCommandBufferGroup);
             }
 
             if (m_UpdateVerticesOnlyGroup.CalculateEntityCount() > 0)
             {
                 UpdateVerticesOnly();
-                EntityManager.RemoveComponent<UpdateCanvasVerticesFlag>(m_UpdateVerticesOnlyGroup);
             }
         }
 
