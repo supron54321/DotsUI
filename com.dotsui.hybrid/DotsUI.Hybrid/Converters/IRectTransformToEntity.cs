@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DotsUI.Hybrid;
+﻿using System.Collections.Generic;
 using Unity.Entities;
 
 namespace DotsUI.Hybrid

@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using DotsUI.Profiling;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -13,7 +8,6 @@ namespace DotsUI.Core.Utils
 {
     public struct AddFlagComponentCommandBuffer : IDisposable
     {
-        // NativeHashSet is not available yet. NativeHashMap seems like a good workaround
         [ReadOnly]
         private NativeQueue<Entity> m_EntityList;
         private ComponentType m_ComponentType;

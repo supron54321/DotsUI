@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using DotsUI.Hybrid;
-using Unity.Entities;
+﻿using Unity.Entities;
 using UnityEngine;
 
 public class WindowCanvas : MonoBehaviour, IConvertGameObjectToEntity

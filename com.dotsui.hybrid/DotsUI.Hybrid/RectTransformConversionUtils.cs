@@ -1,14 +1,9 @@
 using System.Collections.Generic;
-using DotsUI;
 using DotsUI.Core;
-using DotsUI.Input;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.UIElements;
 using RectTransform = DotsUI.Core.RectTransform;
 
 namespace DotsUI.Hybrid

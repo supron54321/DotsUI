@@ -1,12 +1,7 @@
-﻿using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Entities;
-using Unity.Collections;
 using Unity.Mathematics;
-using UnityEngine;
-using UnityEngine.Rendering;
 
 [assembly: InternalsVisibleTo("DotsUI.Core.Tests")]
 [assembly: InternalsVisibleTo("DotsUI.Editor")]

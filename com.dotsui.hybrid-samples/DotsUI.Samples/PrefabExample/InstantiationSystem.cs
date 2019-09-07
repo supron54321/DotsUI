@@ -1,15 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using DotsUI;
-using DotsUI.Controls;
+﻿using DotsUI.Controls;
 using DotsUI.Core;
-using DotsUI.Hybrid;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using RectTransform = UnityEngine.RectTransform;
 
 [DisableAutoCreation]
 [UpdateInGroup(typeof(UserInputSystemGroup))]
@@ -43,6 +37,7 @@ public class InstantiationSystem : ComponentSystem
                 EntityManager.SetComponentData(entity, rectTransform);
                 EntityManager.AddComponentData(entity, new Parent { Value = GetSingletonEntity<WindowCanvasComponent>() });
                 EntityManager.AddComponent<LocalToParent>(entity);
+                EntityManager.AddComponent<DirtyElementFlag>(entity);
             }
 
         }

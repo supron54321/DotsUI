@@ -1,18 +1,13 @@
-﻿using System.Collections.Generic;
-using System.Text;
-using DotsUI.Core;
+﻿using DotsUI.Core;
 using DotsUI.Profiling;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 #if UNITY_2019_3_OR_NEWER
-using UnityEngine.PlayerLoop;
 #else
 using UnityEngine.Experimental.PlayerLoop;
 #endif
-using UnityEngineInternal.Input;
 using Unity.Entities;
 using Unity.Transforms;
 using RectTransform = DotsUI.Core.RectTransform;

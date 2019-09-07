@@ -18,11 +18,6 @@ namespace DotsUI.Core
 
     }
 
-    public struct UpdateCanvasCommandBuffer : IComponentData
-    {
-
-    }
-
     /// <summary>
     /// Updates element color with "Fast path"
     /// </summary>

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using DotsUI.Hybrid;
 using Unity.Entities;
-using Unity.Mathematics;
 using UnityEngine;
 
 [DisallowMultipleComponent]

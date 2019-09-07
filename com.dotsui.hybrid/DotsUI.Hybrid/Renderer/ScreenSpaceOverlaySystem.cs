@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using DotsUI.Core;
 using Unity.Collections;
 using Unity.Entities;
@@ -14,12 +11,12 @@ namespace DotsUI.Hybrid.Renderer
 {
     class GuiProxy : MonoBehaviour
     {
-        public Action onRenderGui;
+        public Action OnRenderGui;
 
         void OnGUI()
         {
             if(Event.current.type == EventType.Repaint)
-                onRenderGui?.Invoke();
+                OnRenderGui?.Invoke();
         }
     }
     [UpdateInGroup(typeof(RenderSystemGroup))]
@@ -87,7 +84,7 @@ namespace DotsUI.Hybrid.Renderer
 
             RequireForUpdate(m_UnitializedCanvasQuery);
             m_Proxy = new UnityEngine.GameObject("ScreenSpaceOverlayGUIProxy_DO_NOT_DESTROY").AddComponent<GuiProxy>();
-            m_Proxy.onRenderGui = OnAfterFrameRender;
+            m_Proxy.OnRenderGui = OnRenderGui;
         }
 
         protected override void OnDestroy()
@@ -97,7 +94,7 @@ namespace DotsUI.Hybrid.Renderer
                 GameObject.Destroy(m_Proxy.gameObject);
         }
 
-        private void OnAfterFrameRender()
+        private void OnRenderGui()
         {
             for(int i = 0; i < m_Buffers.Count; i++)
             {

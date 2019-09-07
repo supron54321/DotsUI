@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
-using UnityEngine;
 using Unity.Entities;
 using DotsUI.Core;
-using UnityEngine.UI;
 
 namespace DotsUI.Hybrid{
     internal class SelectableConverter : TypedConverter<UnityEngine.UI.Selectable>

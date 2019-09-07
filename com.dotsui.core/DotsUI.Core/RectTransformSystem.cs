@@ -3,10 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Collections.LowLevel.Unsafe;
-using System;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace DotsUI.Core
 {
@@ -113,8 +110,7 @@ namespace DotsUI.Core
                 {
                     ComponentType.ReadOnly<CanvasConstantPixelSizeScaler>(),
                     ComponentType.ReadOnly<CanvasConstantPhysicalSizeScaler>(),
-                },
-                Options = EntityQueryOptions.FilterWriteGroup
+                }
             });
         }
         protected override JobHandle OnUpdate(JobHandle inputDeps)

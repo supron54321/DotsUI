@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DotsUI.Core.Utils;
+﻿using DotsUI.Core.Utils;
 using Unity.Entities;
 using Unity.Transforms;
 

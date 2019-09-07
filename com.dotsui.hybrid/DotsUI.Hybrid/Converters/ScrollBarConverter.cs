@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System.Collections.Generic;
 using Unity.Entities;
-using DotsUI.Core;
 using UnityEngine.UI;
 
 namespace DotsUI.Hybrid

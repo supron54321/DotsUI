@@ -1,18 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using DotsUI.Profiling;
-using TMPro;
+﻿using TMPro;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEditor;
-using UnityEngine;
 using UnityEngine.TextCore;
-using UnityEngine.UIElements;
 
 namespace DotsUI.Core
 {
@@ -60,13 +53,11 @@ namespace DotsUI.Core
             [NativeDisableContainerSafetyRestriction]
             public ArchetypeChunkBufferType<ControlVertexIndex> IndexDataType;
 
-            //[NativeDisableContainerSafetyRestriction]
             [ReadOnly]
             public ArchetypeChunkBufferType<TextData> TextBufferType;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
-                var entities = chunk.GetNativeArray(TextEntities);
                 var rebuildMeshArray = chunk.GetNativeArray(RebuildElementMeshFlagArray);
                 var vertexBufferAccessor = chunk.GetBufferAccessor(VertexDataType);
                 var indexBufferAccessor = chunk.GetBufferAccessor(IndexDataType);

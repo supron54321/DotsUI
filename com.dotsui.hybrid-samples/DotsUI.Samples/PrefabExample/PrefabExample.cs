@@ -1,13 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using DotsUI;
-using DotsUI.Controls;
+﻿using UnityEngine;
 using DotsUI.Core;
-using DotsUI.Hybrid;
 using Unity.Entities;
-using Unity.Collections;
-using Unity.Mathematics;
 
 public class PrefabExample : MonoBehaviour
 {
