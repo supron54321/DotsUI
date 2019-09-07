@@ -106,25 +106,6 @@ namespace DotsUI.Core
         }
     }
 
-    [Obsolete("Parent removed. Use Unity.Transforms.Parent instead", true)]
-    public struct UIParent : IComponentData
-    {
-        public Entity Value;
-    }
-
-    [Obsolete("UIPreviousParent removed. Use Unity.Transforms.PreviousParent instead", true)]
-    public struct UIPreviousParent : ISystemStateComponentData
-    {
-        public Entity Value;
-    }
-
-    [InternalBufferCapacity(8)]
-    [Obsolete("UIChild removed. Use Unity.Transforms.Child instead", true)]
-    public struct UIChild : ISystemStateBufferElementData
-    {
-        public Entity Value;
-    }
-
     /// <summary>
     /// Used as color multiplier for VertexColorValue. Useful for selectable transition effects
     /// </summary>

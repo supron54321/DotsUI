@@ -33,7 +33,7 @@ namespace DotsUI.Core
     /// 16 seems like a quite big buffer, but it's enough to store 9-slice sprite vertices.
     /// It is the most common sprite type used in UI. I noticed performance increase compared to smaller buffers
     /// </summary>
-    [InternalBufferCapacity(16)]
+    [InternalBufferCapacity(0)]
     public struct ControlVertexData : IBufferElementData
     {
         public float3 Position;
@@ -42,7 +42,7 @@ namespace DotsUI.Core
         public float2 TexCoord0;
         public float2 TexCoord1;
     }
-    [InternalBufferCapacity(54)]    // 54 is the worst case scenario for 9-slice sprite
+    [InternalBufferCapacity(0)]    // 54 is the worst case scenario for 9-slice sprite
     public struct ControlVertexIndex : IBufferElementData
     {
         public int Value;

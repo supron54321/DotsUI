@@ -20,7 +20,7 @@ namespace DotsUI.Hybrid
         protected override void OnCreate()
         {
             base.OnCreate();
-
+            InitEntityQueryCache(20);
             m_DefaultSprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0.0f, 0.0f, 0.0f, 0.0f), Vector2.zero);
             CommandBuffer cmdBuff = new CommandBuffer();
             cmdBuff.name = "TESTBUFF";
@@ -41,6 +41,19 @@ namespace DotsUI.Hybrid
             Entities.ForEach((TextMeshProUGUI tmp) => { ConvertTextMeshPro(tmp); ConvertGraphic(tmp); });
             Entities.ForEach((ScrollRect scrollRect) => { ConvertScrollRect(scrollRect); });
             Entities.ForEach((Scrollbar scrollBar) => { ConvertScrollBar(scrollBar); ConvertSelectable(scrollBar); });
+            Entities.ForEach((Mask mask) => { ConvertMask(mask); });
+            Entities.ForEach((RectMask2D mask) => { ConvertMask(mask); });
+        }
+
+        private void ConvertMask(Mask mask)
+        {
+            var entity = GetPrimaryEntity(mask);
+            DstEntityManager.AddComponent<RectMask>(entity);
+        }
+        private void ConvertMask(RectMask2D mask)
+        {
+            var entity = GetPrimaryEntity(mask);
+            DstEntityManager.AddComponent<RectMask>(entity);
         }
 
         private void ConvertScrollBar(Scrollbar scrollBar)
@@ -92,10 +105,12 @@ namespace DotsUI.Hybrid
             var entity = GetPrimaryEntity(inputField);
             DstEntityManager.AddComponentData(entity, new DotsUI.Input.KeyboardInputReceiver());
             DstEntityManager.AddBuffer<DotsUI.Input.KeyboardInputBuffer>(entity);
-            Entity target = TryGetPrimaryEntity(inputField.targetGraphic?.rectTransform);
+            Entity target = TryGetPrimaryEntity(inputField.textComponent);
+            Entity placeholder = TryGetPrimaryEntity(inputField.placeholder);
             DstEntityManager.AddComponentData(entity, new DotsUI.Controls.InputField()
             {
-                Target = target
+                Target = target,
+                Placeholder = placeholder
             });
             DstEntityManager.AddComponentData(entity, new DotsUI.Controls.InputFieldCaretState()
             {
