@@ -1,10 +1,5 @@
-﻿using System;
-using TMPro;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using TMPro;
 using Unity.Entities;
-using System.Threading.Tasks;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace DotsUI.Core

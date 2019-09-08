@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DotsUI.Core;
+﻿using DotsUI.Core;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -22,7 +17,6 @@ namespace DotsUI.Hybrid
                 All = new[]
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
-                    //ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
                     ComponentType.ReadWrite<CanvasScreenSize>(),
                 }
             });
@@ -55,7 +49,6 @@ namespace DotsUI.Hybrid
                             sizeArray[i] = canvasSize;
                         }
                     }
-                    //chunk.SetChunkComponentData(sizeType, canvasSize);
                 }
                 while(commandBuffer.TryDequeue(out var entity))
                     EntityManager.AddComponent<RebuildCanvasHierarchyFlag>(entity);

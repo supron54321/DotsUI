@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TMPro;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -29,11 +25,12 @@ namespace DotsUI.Core
         public int NativeMaterialId;    // TODO: Temporary hack
     }
 
-    public struct LegacyTextFontMaterial : ISharedComponentData, IEquatable<LegacyTextFontMaterial>
+    public struct LegacyTextFontAsset : ISharedComponentData, IEquatable<LegacyTextFontAsset>
     {
         public Material FontMaterial;
+        public TMP_FontAsset Asset;
 
-        public bool Equals(LegacyTextFontMaterial other)
+        public bool Equals(LegacyTextFontAsset other)
         {
             return Equals(FontMaterial, other.FontMaterial);
         }
@@ -41,7 +38,7 @@ namespace DotsUI.Core
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is LegacyTextFontMaterial other && Equals(other);
+            return obj is LegacyTextFontAsset other && Equals(other);
         }
 
         public override int GetHashCode()

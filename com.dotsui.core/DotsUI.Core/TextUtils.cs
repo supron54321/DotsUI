@@ -2,7 +2,6 @@ using TMPro;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
-using UnityEngine;
 
 namespace DotsUI.Core
 {
@@ -16,11 +15,12 @@ namespace DotsUI.Core
 
         public static Entity CreateFontAssetFromTmp(EntityManager mgr, TMP_FontAsset font)
         {
-            var entity = mgr.CreateEntity(typeof(TextFontAsset), typeof(LegacyTextFontMaterial), typeof(FontGlyphData));
+            var entity = mgr.CreateEntity(typeof(TextFontAsset), typeof(LegacyTextFontAsset), typeof(FontGlyphData));
 
 
-            mgr.SetSharedComponentData(entity, new LegacyTextFontMaterial
+            mgr.SetSharedComponentData(entity, new LegacyTextFontAsset
             {
+                Asset = font,
                 FontMaterial = font.material
             });
 

@@ -1,15 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using DotsUI.Hybrid;
-using Unity.Entities;
+﻿using Unity.Entities;
 using UnityEngine;
 
-public class WindowCanvas : MonoBehaviour, IRectTransformToEntity
+public class WindowCanvas : MonoBehaviour, IConvertGameObjectToEntity
 {
-    public void ConvertToEntity(Entity entity, RectTransformToEntity rectTransformToEntity, Dictionary<Object, Entity> assetToEntity,
-        EntityManager mgr)
+    public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem)
     {
-        mgr.AddComponent(entity, typeof(WindowCanvasComponent));
+        dstManager.AddComponent(entity, typeof(WindowCanvasComponent));
     }
 }
 

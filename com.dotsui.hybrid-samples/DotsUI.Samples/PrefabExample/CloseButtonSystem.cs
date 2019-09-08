@@ -1,9 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using DotsUI;
-using DotsUI.Controls;
+﻿using DotsUI.Controls;
 using Unity.Entities;
-using UnityEngine;
 using DotsUI.Core;
 using Unity.Collections;
 using Unity.Transforms;

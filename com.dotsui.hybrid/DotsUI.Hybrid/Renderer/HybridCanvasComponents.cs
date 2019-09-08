@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Unity.Entities;
-using DotsUI.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -87,4 +82,6 @@ namespace DotsUI.Hybrid
             return (Target != null ? Target.GetHashCode() : 0);
         }
     }
+
+    public struct CanvasScreenSpaceOverlay : IComponentData { }
 }

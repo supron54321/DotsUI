@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -106,25 +104,6 @@ namespace DotsUI.Core
         {
             return new Rect(Min, Max - Min);
         }
-    }
-
-    [Obsolete("Parent removed. Use Unity.Transforms.Parent instead", true)]
-    public struct UIParent : IComponentData
-    {
-        public Entity Value;
-    }
-
-    [Obsolete("UIPreviousParent removed. Use Unity.Transforms.PreviousParent instead", true)]
-    public struct UIPreviousParent : ISystemStateComponentData
-    {
-        public Entity Value;
-    }
-
-    [InternalBufferCapacity(8)]
-    [Obsolete("UIChild removed. Use Unity.Transforms.Child instead", true)]
-    public struct UIChild : ISystemStateBufferElementData
-    {
-        public Entity Value;
     }
 
     /// <summary>

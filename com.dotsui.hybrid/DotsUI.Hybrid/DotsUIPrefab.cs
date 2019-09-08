@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Entities;
 using DotsUI.Core;
@@ -10,6 +6,7 @@ using DotsUI.Profiling;
 
 namespace DotsUI.Hybrid
 {
+    [Obsolete("Use ConvertToEntity workflow instead", false)]
     public struct DotsUIPrefab : IDisposable
     {
         RectTransformToEntity m_RectTransformToPrefabEntity;

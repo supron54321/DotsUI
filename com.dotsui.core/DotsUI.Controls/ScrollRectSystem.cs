@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -11,7 +6,6 @@ using DotsUI.Core;
 using Unity.Burst;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 using RectTransform = DotsUI.Core.RectTransform;
 
 namespace DotsUI.Controls

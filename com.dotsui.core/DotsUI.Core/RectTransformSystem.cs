@@ -3,10 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Collections.LowLevel.Unsafe;
-using System;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace DotsUI.Core
 {
@@ -71,8 +68,8 @@ namespace DotsUI.Core
                         scale = Dpi * physicalSizeArray[i].Factor;
                     var canvasRect = new WorldSpaceRect()
                     {
-                        Min = chunkRectTransform[i].Position,
-                        Max = (chunkRectTransform[i].Position + canvasSizeArray[i].Value)
+                        Min = float2.zero,//chunkRectTransform[i].Position,
+                        Max = canvasSizeArray[i].Value//(chunkRectTransform[i].Position + canvasSizeArray[i].Value)
                     };
                     RebuildContext.WorldSpaceRectFromEntity[entities[i]] = canvasRect;
 
@@ -113,8 +110,7 @@ namespace DotsUI.Core
                 {
                     ComponentType.ReadOnly<CanvasConstantPixelSizeScaler>(),
                     ComponentType.ReadOnly<CanvasConstantPhysicalSizeScaler>(),
-                },
-                Options = EntityQueryOptions.FilterWriteGroup
+                }
             });
         }
         protected override JobHandle OnUpdate(JobHandle inputDeps)

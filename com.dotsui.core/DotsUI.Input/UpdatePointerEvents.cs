@@ -1,14 +1,10 @@
-using System;
 using System.Collections.Generic;
-using System.Drawing;
-using DotsUI.Core;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace DotsUI.Input
 {

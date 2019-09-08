@@ -1,16 +1,12 @@
 ﻿//#define ENABLE_RECT_MASK
 #define TEST
-using System;
-using System.Collections.Generic;
 using DotsUI.Profiling;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
-using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace DotsUI.Core
 {
@@ -181,7 +177,6 @@ namespace DotsUI.Core
             var verticesFromEntity = GetBufferFromEntity<ControlVertexData>(true);
             var trianglesFromEntity = GetBufferFromEntity<ControlVertexIndex>(true);
 
-            //var archetypeArray = m_RootGroup.CreateArchetypeChunkArray(Allocator.TempJob);
             using (new ProfilerSample("RenderSystem.BuildingChunks"))
             {
                 MeshBatching chunkJob = new MeshBatching()

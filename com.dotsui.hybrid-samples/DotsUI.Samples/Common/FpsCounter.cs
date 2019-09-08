@@ -1,23 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using DotsUI.Hybrid;
-using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 
-public class FpsCounter : MonoBehaviour, IRectTransformToEntity
+public class FpsCounter : MonoBehaviour, IConvertGameObjectToEntity
 {
     public RectTransform TargetText;
 
-    public void ConvertToEntity(Entity entity, RectTransformToEntity rectTransformToEntity, Dictionary<Object, Entity> assetToEntity,
-        EntityManager mgr)
+    public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem)
     {
-        mgr.AddComponentData(entity, new FpsCounterComponent()
+        dstManager.AddComponentData(entity, new FpsCounterComponent()
         {
-            TargetText = rectTransformToEntity[TargetText]
+            TargetText = conversionSystem.GetPrimaryEntity(TargetText)
         });
     }
 }

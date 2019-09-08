@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using UnityEngine;
 using Unity.Entities;
 using DotsUI.Core;
 using UnityEngine.UI;

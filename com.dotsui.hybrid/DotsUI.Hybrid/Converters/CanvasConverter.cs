@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
 using DotsUI.Core;
-using DotsUI.Hybrid;
 using Unity.Mathematics;
-using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 namespace DotsUI.Hybrid{

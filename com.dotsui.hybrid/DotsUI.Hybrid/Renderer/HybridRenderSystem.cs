@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Unity.Entities;
 using DotsUI.Core;
@@ -15,6 +10,15 @@ using UnityEngine.Rendering;
 
 namespace DotsUI.Hybrid
 {
+    internal struct CanvasLayer : IComparable<CanvasLayer>
+    {
+        public int SortId;
+        public Entity CanvasEntity;
+        public int CompareTo(CanvasLayer other)
+        {
+            return SortId.CompareTo(other.SortId);
+        }
+    }
     [UpdateInGroup(typeof(RenderSystemGroup))]
     class HybridRenderSystem : ComponentSystem
     {
@@ -25,16 +29,6 @@ namespace DotsUI.Hybrid
         private MaterialPropertyBlock m_TemporaryBlock = new MaterialPropertyBlock();
         private VertexAttributeDescriptor[] m_MeshDescriptors;
 
-
-        private struct CanvasLayer : IComparable<CanvasLayer>
-        {
-            public int SortId;
-            public Entity CanvasEntity;
-            public int CompareTo(CanvasLayer other)
-            {
-                return SortId.CompareTo(other.SortId);
-            }
-        }
 
 
         protected override void OnCreate()
@@ -55,6 +49,7 @@ namespace DotsUI.Hybrid
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
                     ComponentType.ReadOnly<CanvasTargetRenderTexture>(),
+                    ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(),
                 }
             });
             m_UpdateVerticesOnlyGroup = GetEntityQuery(new EntityQueryDesc()
@@ -73,6 +68,7 @@ namespace DotsUI.Hybrid
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
                     ComponentType.ReadOnly<CanvasTargetRenderTexture>(),
+                    ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(),
                 },
                 None = new ComponentType[]
                 {
@@ -89,6 +85,7 @@ namespace DotsUI.Hybrid
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
                     ComponentType.ReadOnly<CanvasTargetRenderTexture>(),
+                    ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(),
                 }
             });
             m_DefaultMaterial = Material.Instantiate(Resources.Load<Material>("DotsUIDefaultMaterial"));
@@ -169,13 +166,11 @@ namespace DotsUI.Hybrid
                     }
                 }
                 layerEntity.Dispose();
-                EntityManager.RemoveComponent<RebuildCanvasHierarchyFlag>(m_UpdateMeshAndCommandBufferGroup);
             }
 
             if (m_UpdateVerticesOnlyGroup.CalculateEntityCount() > 0)
             {
                 UpdateVerticesOnly();
-                EntityManager.RemoveComponent<UpdateCanvasVerticesFlag>(m_UpdateVerticesOnlyGroup);
             }
         }
 
@@ -277,10 +272,9 @@ namespace DotsUI.Hybrid
                 unityMesh.UploadMeshData(false);
             }
 
-            using (new ProfilerSample("BuildCommangBuffer"))
+            using (new ProfilerSample("BuildCommandBuffer"))
             {
                 canvasCommandBuffer.Clear();
-                //canvasCommandBuffer.ClearRenderTarget(true, true, UnityEngine.Color.black);
                 canvasCommandBuffer.SetProjectionMatrix(Matrix4x4.Ortho(0.0f, Screen.width, 0.0f, Screen.height, -100.0f, 100.0f));
                 canvasCommandBuffer.SetViewMatrix(Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one));
                 for (int i = 0; i < unityMesh.subMeshCount; i++)
@@ -312,7 +306,7 @@ namespace DotsUI.Hybrid
                 }
                 else if (subMesh.MaterialType == SubMeshType.Text)
                 {
-                    var fontMaterial = EntityManager.GetSharedComponentData<LegacyTextFontMaterial>(subMesh.MaterialId).FontMaterial;
+                    var fontMaterial = EntityManager.GetSharedComponentData<LegacyTextFontAsset>(subMesh.MaterialId).FontMaterial;
                     m_TemporaryBlock.SetTexture("_MainTex", fontMaterial.mainTexture);
                     return fontMaterial;
                 }

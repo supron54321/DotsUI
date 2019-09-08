@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DotsUI.Core;
+﻿using DotsUI.Core;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
@@ -25,6 +20,7 @@ namespace DotsUI.Hybrid
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
                     ComponentType.ReadOnly<CanvasTargetRenderTexture>(),
+                    ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(), 
                 },
                 None = new[]
                 {
@@ -37,6 +33,7 @@ namespace DotsUI.Hybrid
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
                     ComponentType.ReadOnly<CanvasTargetRenderTexture>(),
+                    ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(),
                 },
                 None = new[]
                 {

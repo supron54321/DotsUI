@@ -1,34 +1,27 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using DotsUI;
-using DotsUI.Controls;
+﻿using DotsUI.Controls;
 using DotsUI.Core;
-using DotsUI.Hybrid;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using RectTransform = UnityEngine.RectTransform;
 
 [DisableAutoCreation]
 [UpdateInGroup(typeof(UserInputSystemGroup))]
 public class InstantiationSystem : ComponentSystem
 {
     private EntityQuery m_InstantiateButtonQuery;
-    private DotsUIPrefab m_WindowPrefab;
+    private Entity m_WindowPrefab;
 
     protected override void OnCreate()
     {
         m_InstantiateButtonQuery = GetEntityQuery(ComponentType.ReadOnly<ButtonClickedEvent>(),
             ComponentType.ReadOnly<InstantiateButtonComponent>());
 
-        m_WindowPrefab = new DotsUIPrefab(Resources.Load<RectTransform>("WindowPrefab"), EntityManager, Allocator.Persistent);
+        m_WindowPrefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(Resources.Load<GameObject>("WindowPrefab"), new GameObjectConversionSettings(World, GameObjectConversionUtility.ConversionFlags.AssignName));
     }
 
     protected override void OnDestroy()
     {
-        m_WindowPrefab.Dispose();
     }
 
     protected override void OnUpdate()
@@ -38,11 +31,13 @@ public class InstantiationSystem : ComponentSystem
         {
             for (int j = 0; j < 10; j++)
             {
-                Entity entity = m_WindowPrefab.Instantiate();
+                Entity entity = EntityManager.Instantiate(m_WindowPrefab);
                 DotsUI.Core.RectTransform rectTransform = EntityManager.GetComponentData<DotsUI.Core.RectTransform>(entity);
                 rectTransform.Position = new float2(10.0f + j*10.0f, - 10.0f - j*10.0f);
                 EntityManager.SetComponentData(entity, rectTransform);
-                EntityManager.SetComponentData(entity, new Parent { Value = GetSingletonEntity<WindowCanvasComponent>() });
+                EntityManager.AddComponentData(entity, new Parent { Value = GetSingletonEntity<WindowCanvasComponent>() });
+                EntityManager.AddComponent<LocalToParent>(entity);
+                EntityManager.AddComponent<DirtyElementFlag>(entity);
             }
 
         }

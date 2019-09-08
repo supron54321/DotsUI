@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DotsUI.Core;
+﻿using DotsUI.Core;
 using Unity.Entities;
 using Unity.Jobs;
 
@@ -19,7 +14,7 @@ namespace DotsUI.Hybrid
         EntityQuery m_FontAssetGroup;
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            ArchetypeChunkSharedComponentType<LegacyTextFontMaterial> materialType = GetArchetypeChunkSharedComponentType<LegacyTextFontMaterial>();
+            ArchetypeChunkSharedComponentType<LegacyTextFontAsset> materialType = GetArchetypeChunkSharedComponentType<LegacyTextFontAsset>();
             ArchetypeChunkComponentType<TextFontAsset> fontType = GetArchetypeChunkComponentType<TextFontAsset>();
             using (var chunkArray = m_FontAssetGroup.CreateArchetypeChunkArray(Unity.Collections.Allocator.TempJob))
             {
@@ -46,7 +41,7 @@ namespace DotsUI.Hybrid
             {
                 All = new ComponentType[]
                 {
-                    ComponentType.ReadOnly<LegacyTextFontMaterial>(),
+                    ComponentType.ReadOnly<LegacyTextFontAsset>(),
                     ComponentType.ReadWrite<TextFontAsset>(),
                 },
                 None = new ComponentType[]
