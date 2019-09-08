@@ -1,12 +1,16 @@
+
+# Changelog:
+### [com.dotsui.core/CHANGELOG.md](com.dotsui.core/CHANGELOG.md)
+
 # Packages
 
-## [Core](com.dotsui.core)
-## [UnityEngine hybrid converters](com.dotsui.hybrid)
-## [UnityEngine hybrid samples](com.dotsui.hybrid-samples)
+### [Core](com.dotsui.core)
+### [UnityEngine hybrid converters](com.dotsui.hybrid)
+### [UnityEngine hybrid samples](com.dotsui.hybrid-samples)
 
 # Requirements
 
-Unity 2019.3.0a8 (hybrid package requires new Mesh API).
+Unity 2019.3.0a8 or newer (hybrid package requires new Mesh API).
 
 # Installation
 

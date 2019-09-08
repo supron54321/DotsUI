@@ -7,7 +7,7 @@
 ### Added
 
 * Added support for ConvertToEntity
-* Added support for Screen Space- Overlay canvas rendering mode
+* Added support for Screen Space - Overlay canvas rendering mode
 
 
 ## [0.2.0] - 2019-08-19
