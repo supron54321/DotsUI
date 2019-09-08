@@ -123,7 +123,7 @@ namespace DotsUI.Hybrid
             var entity = GetPrimaryEntity(selectable);
             DstEntityManager.AddComponent(entity, typeof(DotsUI.Input.Selectable));
             var colors = selectable.colors;
-            Entity target = TryGetPrimaryEntity(selectable.targetGraphic?.rectTransform);
+            Entity target = TryGetPrimaryEntity(selectable.targetGraphic);
             DstEntityManager.AddComponentData(entity, new DotsUI.Input.SelectableColor()
             {
                 Normal = colors.normalColor.ToFloat4(),
