@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DotsUI.Core;
 using Unity.Collections;
@@ -36,6 +37,7 @@ namespace DotsUI.Hybrid
     /// This class is temporary workaround over ConvertToEntity bug with UnityEngine.RectTransform
     /// Code is ugly and not optimized, but I didnt care that much since it will be replaced anyway
     /// </summary>
+    [Obsolete("Use ConvertToEntity workflow instead", false)]
     public static class RectTransformConversionUtils
     {
         static RectTransformConverter m_Converter = new RectTransformConverter();

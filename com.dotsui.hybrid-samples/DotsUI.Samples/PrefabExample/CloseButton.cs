@@ -4,16 +4,15 @@ using Unity.Entities;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class CloseButton : MonoBehaviour, IRectTransformToEntity
+public class CloseButton : MonoBehaviour, IConvertGameObjectToEntity
 {
     public RectTransform WindowTransform;
 
-    public void ConvertToEntity(Entity entity, RectTransformToEntity rectTransformToEntity, Dictionary<Object, Entity> assetToEntity,
-        EntityManager mgr)
+    public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem)
     {
-        mgr.AddComponentData(entity, new CloseButtonComponent()
+        dstManager.AddComponentData(entity, new CloseButtonComponent()
         {
-            WindowTransform = rectTransformToEntity[WindowTransform]
+            WindowTransform = conversionSystem.GetPrimaryEntity(WindowTransform)
         });
     }
 }

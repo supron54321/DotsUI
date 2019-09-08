@@ -6,6 +6,7 @@ using DotsUI.Profiling;
 
 namespace DotsUI.Hybrid
 {
+    [Obsolete("Use ConvertToEntity workflow instead", false)]
     public struct DotsUIPrefab : IDisposable
     {
         RectTransformToEntity m_RectTransformToPrefabEntity;
