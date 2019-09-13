@@ -137,8 +137,7 @@ namespace DotsUI.Controls
                 var scrollMask = WorldSpaceMaskFromEntity[scrollEntity];
                 var scale = ElementScaleFromEntity[scrollEntity].Value;
                 for (int j = 0; j < children.Length; j++)
-                    RectTransformUtils.UpdateTransformRecursive(ref scrollRectWorldSpace, scrollMask, children[j].Value, scale,
-                        ref rebuildContext);
+                    rebuildContext.UpdateTransformRecursive(ref scrollRectWorldSpace, scrollMask, children[j].Value, scale);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

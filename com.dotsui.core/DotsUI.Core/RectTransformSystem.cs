@@ -23,18 +23,6 @@ namespace DotsUI.Core
             [ReadOnly] public ArchetypeChunkBufferType<Child> ChildType;
             [ReadOnly] public ArchetypeChunkComponentType<CanvasConstantPhysicalSizeScaler> ConstantPhysicalScaler;
             [ReadOnly] public ArchetypeChunkComponentType<CanvasConstantPixelSizeScaler> ConstantPixelScaler;
-
-            /*
-            [ReadOnly] public BufferFromEntity<UIChild> ChildrenFromEntity;
-            [NativeDisableContainerSafetyRestriction]
-            public ComponentDataFromEntity<WorldSpaceRect> WorldSpaceRectFromEntity;
-            [NativeDisableContainerSafetyRestriction]
-            public ComponentDataFromEntity<RectTransform> RectTransformFromEntity;
-            [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<RebuildElementMeshFlag> RebuildFlagFromEntity;
-            [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<ElementScale> ElementScaleFromEntity;
-            [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<WorldSpaceMask> WorldSpaceMaskFromEntity;
-            [ReadOnly] public ComponentDataFromEntity<RectMask> RectMaskFromEntity;
-            */
             public HierarchyRebuildContext RebuildContext;
 
 
@@ -49,17 +37,6 @@ namespace DotsUI.Core
                 bool useConstantPhysicalSize = chunk.Has(ConstantPhysicalScaler);
                 if (useConstantPhysicalSize)
                     physicalSizeArray = chunk.GetNativeArray(ConstantPhysicalScaler);
-
-                //HierarchyRebuildContext rebuildContext = new HierarchyRebuildContext()
-                //{
-                //    ChildrenFromEntity = RebuildContext.ChildrenFromEntity,
-                //    ElementScaleFromEntity = RebuildContext.ElementScaleFromEntity,
-                //    RebuildFlagFromEntity = RebuildFlagFromEntity,
-                //    RectMaskFromEntity = RectMaskFromEntity,
-                //    RectTransformFromEntity = RectTransformFromEntity,
-                //    WorldSpaceMaskFromEntity = WorldSpaceMaskFromEntity,
-                //    WorldSpaceRectFromEntity = WorldSpaceRectFromEntity
-                //};
 
                 for (int i = 0; i < chunk.Count; i++)
                 {
@@ -83,8 +60,7 @@ namespace DotsUI.Core
                     for (int j = 0; j < children.Length; j++)
                     {
                         var childTransform = RebuildContext.RectTransformFromEntity[children[j].Value];
-                        RectTransformUtils.UpdateTransformRecursive(ref parentLocalToWorld, canvasMask, children[j].Value, scale, ref RebuildContext);
-                        //UpdateTransformRecursive(ref parentLocalToWorld, canvasMask, children[j].Value, scale);
+                        RebuildContext.UpdateTransformRecursive(ref parentLocalToWorld, canvasMask, children[j].Value, scale);
                     }
                 }
             }
@@ -117,10 +93,6 @@ namespace DotsUI.Core
         {
             var entityType = GetArchetypeChunkEntityType();
             var childType = GetArchetypeChunkBufferType<Child>(true);
-            var childFromEntity = GetBufferFromEntity<Child>(true);
-            var worldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>();
-            var rectTransformFromEntity = GetComponentDataFromEntity<RectTransform>(true);
-            var rebuildFlagType = GetComponentDataFromEntity<RebuildElementMeshFlag>();
 
             var dpi = ScreenUtils.GetScaledDpi();
             var updateHierarchyJob = new UpdateHierarchy
@@ -134,10 +106,10 @@ namespace DotsUI.Core
                 ConstantPixelScaler = GetArchetypeChunkComponentType<CanvasConstantPixelSizeScaler>(true),
                 RebuildContext = new HierarchyRebuildContext()
                 {
-                    ChildrenFromEntity = childFromEntity,
-                    WorldSpaceRectFromEntity = worldSpaceRectFromEntity,
-                    RectTransformFromEntity = rectTransformFromEntity,
-                    RebuildFlagFromEntity = rebuildFlagType,
+                    ChildrenFromEntity = GetBufferFromEntity<Child>(true),
+                    WorldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>(),
+                    RectTransformFromEntity = GetComponentDataFromEntity<RectTransform>(true),
+                    RebuildFlagFromEntity = GetComponentDataFromEntity<RebuildElementMeshFlag>(),
                     ElementScaleFromEntity = GetComponentDataFromEntity<ElementScale>(),
                     WorldSpaceMaskFromEntity = GetComponentDataFromEntity<WorldSpaceMask>(),
                     RectMaskFromEntity = GetComponentDataFromEntity<RectMask>(true)

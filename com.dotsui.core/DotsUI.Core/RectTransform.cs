@@ -28,6 +28,21 @@ namespace DotsUI.Core
         public float2 Max;
     }
 
+    public struct ElementCanvasReference : ISharedComponentData
+    {
+        public Entity Canvas;
+
+        public override int GetHashCode()
+        {
+            return Canvas.Index;
+        }
+    }
+
+    public struct ElementHierarchyIndex : IComponentData
+    {
+        public int Value;
+    }
+
     /// <summary>
     /// Updated by RectTransformSystem. Consider it read-only
     /// </summary>

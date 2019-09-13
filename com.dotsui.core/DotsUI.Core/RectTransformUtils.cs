@@ -17,35 +17,51 @@ namespace DotsUI.Core
         [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<ElementScale> ElementScaleFromEntity;
         [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<WorldSpaceMask> WorldSpaceMaskFromEntity;
         [ReadOnly] public ComponentDataFromEntity<RectMask> RectMaskFromEntity;
-    }
-    public class RectTransformUtils
-    {
-        public static void UpdateTransformRecursive(ref WorldSpaceRect parentLocalToWorldSpaceRect, WorldSpaceMask currentMask, Entity entity, float2 scale, ref HierarchyRebuildContext rebuildContext)
-        {
-            var childTransform = rebuildContext.RectTransformFromEntity[entity];
-            var childLocalToWorld = CalculateWorldSpaceRect(parentLocalToWorldSpaceRect, scale, childTransform);
-            rebuildContext.WorldSpaceRectFromEntity[entity] = childLocalToWorld;
-            rebuildContext.ElementScaleFromEntity[entity] = new ElementScale() { Value = scale };
-            UpdateRectMask(entity, childLocalToWorld, ref currentMask, ref rebuildContext);
-            rebuildContext.WorldSpaceMaskFromEntity[entity] = currentMask;
+        [NativeDisableContainerSafetyRestriction] [WriteOnly] public ComponentDataFromEntity<ElementHierarchyIndex> HierarchyIndexFromEntity;
 
-            if (rebuildContext.RebuildFlagFromEntity.Exists(entity))
-                rebuildContext.RebuildFlagFromEntity[entity] = new RebuildElementMeshFlag()
+
+        public static HierarchyRebuildContext Create(JobComponentSystem system)
+        {
+            return new HierarchyRebuildContext()
+            {
+                ChildrenFromEntity = system.GetBufferFromEntity<Child>(true),
+                WorldSpaceRectFromEntity = system.GetComponentDataFromEntity<WorldSpaceRect>(),
+                RectTransformFromEntity = system.GetComponentDataFromEntity<RectTransform>(true),
+                RebuildFlagFromEntity = system.GetComponentDataFromEntity<RebuildElementMeshFlag>(),
+                ElementScaleFromEntity = system.GetComponentDataFromEntity<ElementScale>(),
+                WorldSpaceMaskFromEntity = system.GetComponentDataFromEntity<WorldSpaceMask>(),
+                RectMaskFromEntity = system.GetComponentDataFromEntity<RectMask>(true),
+                HierarchyIndexFromEntity = system.GetComponentDataFromEntity<ElementHierarchyIndex>(),
+            };
+        }
+
+
+        public void UpdateTransformRecursive(ref WorldSpaceRect parentLocalToWorldSpaceRect, WorldSpaceMask currentMask, Entity entity, float2 scale)
+        {
+            var childTransform = RectTransformFromEntity[entity];
+            var childLocalToWorld = RectTransformUtils.CalculateWorldSpaceRect(parentLocalToWorldSpaceRect, scale, childTransform);
+            WorldSpaceRectFromEntity[entity] = childLocalToWorld;
+            ElementScaleFromEntity[entity] = new ElementScale() { Value = scale };
+            UpdateRectMask(entity, childLocalToWorld, ref currentMask);
+            WorldSpaceMaskFromEntity[entity] = currentMask;
+
+            if (RebuildFlagFromEntity.Exists(entity))
+                RebuildFlagFromEntity[entity] = new RebuildElementMeshFlag()
                 {
                     Rebuild = true
                 };
-            if (rebuildContext.ChildrenFromEntity.Exists(entity))
+            if (ChildrenFromEntity.Exists(entity))
             {
-                var children = rebuildContext.ChildrenFromEntity[entity];
+                var children = ChildrenFromEntity[entity];
                 for (int i = 0; i < children.Length; i++)
                 {
-                    UpdateTransformRecursive(ref childLocalToWorld, currentMask, children[i].Value, scale, ref rebuildContext);
+                    UpdateTransformRecursive(ref childLocalToWorld, currentMask, children[i].Value, scale);
                 }
             }
         }
-        private static void UpdateRectMask(Entity entity, WorldSpaceRect elementRect, ref WorldSpaceMask mask, ref HierarchyRebuildContext rebuildContext)
+        private void UpdateRectMask(Entity entity, WorldSpaceRect elementRect, ref WorldSpaceMask mask)
         {
-            if (rebuildContext.RectMaskFromEntity.Exists(entity))
+            if (RectMaskFromEntity.Exists(entity))
             {
                 float2 newMin = math.max(mask.Min, elementRect.Min);
                 float2 newMax = math.min(mask.Max, elementRect.Max);
@@ -56,6 +72,9 @@ namespace DotsUI.Core
                 };
             }
         }
+    }
+    public class RectTransformUtils
+    {
 
         public static WorldSpaceRect CalculateWorldSpaceRect(WorldSpaceRect parentRect, float2 scale,
             RectTransform childTransform)
