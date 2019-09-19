@@ -13,6 +13,17 @@ using RectTransform = UnityEngine.RectTransform;
 
 namespace DotsUI.Hybrid
 {
+    [UpdateInGroup(typeof(GameObjectDeclareReferencedObjectsGroup))]
+    class ImageReferenceConversion : GameObjectConversionSystem
+    {
+        protected override void OnUpdate()
+        {
+            Entities.ForEach((Image image) =>
+            {
+                DeclareReferencedAsset(image.sprite);
+            });
+        }
+    }
     [UpdateInGroup(typeof(GameObjectConversionGroup))]
     class RectTransformConversion : GameObjectConversionSystem
     {
@@ -212,6 +223,7 @@ namespace DotsUI.Hybrid
             {
                 assetEntity = DstEntityManager.CreateEntity(typeof(SpriteAsset), typeof(SpriteVertexData));
                 DstEntityManager.SetSharedComponentData(assetEntity, new SpriteAsset { Value = sprite });
+
             }
             SpriteImage spriteImage = new SpriteImage
             {
