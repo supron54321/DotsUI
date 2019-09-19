@@ -25,6 +25,7 @@ namespace DotsUI.Core
         public int NativeMaterialId;    // TODO: Temporary hack
     }
 
+	[Serializable]
     public struct LegacyTextFontAsset : ISharedComponentData, IEquatable<LegacyTextFontAsset>
     {
         public Material FontMaterial;

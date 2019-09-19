@@ -1,5 +1,5 @@
-﻿using System;
-using DotsUI.Core;
+﻿using DotsUI.Core;
+using System;
 using TMPro;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -7,27 +7,20 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.UI;
 using RectTransform = UnityEngine.RectTransform;
 
 namespace DotsUI.Hybrid
 {
-    [UpdateInGroup(typeof(GameObjectConversionGroup))]
+	[UpdateInGroup(typeof(GameObjectConversionGroup))]
     class RectTransformConversion : GameObjectConversionSystem
     {
-        Sprite m_DefaultSprite;
-        protected override void OnCreate()
+        public static Sprite DefaultSprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0.0f, 0.0f, 0.0f, 0.0f), Vector2.zero);
+
+		protected override void OnCreate()
         {
             base.OnCreate();
             InitEntityQueryCache(20);
-            m_DefaultSprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0.0f, 0.0f, 0.0f, 0.0f), Vector2.zero);
-            CommandBuffer cmdBuff = new CommandBuffer();
-            cmdBuff.name = "TESTBUFF";
-            UnityEngine.Rendering.RenderPipelineManager.endFrameRendering += (i1, i2) =>
-            {
-                cmdBuff.Clear();
-            };
         }
 
         protected override void OnUpdate()
@@ -143,16 +136,19 @@ namespace DotsUI.Hybrid
         private void ConvertTextMeshPro(TextMeshProUGUI tmp)
         {
             var entity = GetPrimaryEntity(tmp);
-            if (tmp.font == null)
-            {
-                Debug.LogError($"TextMeshProConverter - font asset cannot be null reference. Object: {tmp}", tmp);
-                return;
-            }
+            var fontAsset = GetPrimaryEntity(tmp.font);
 
-            if (!TryGetAssetEntity(new LegacyTextFontAsset{ Asset = tmp.font, FontMaterial = tmp.font.material }, out var fontAsset))
-            {
-                fontAsset = TextUtils.CreateFontAssetFromTmp(DstEntityManager, tmp.font);
-            }
+            //if (tmp.font == null)
+            //{
+            //    Debug.LogError($"TextMeshProConverter - font asset cannot be null reference. Object: {tmp}", tmp);
+            //    return;
+            //}
+
+            //if (!TryGetAssetEntity(new LegacyTextFontAsset{ Asset = tmp.font, FontMaterial = tmp.font.material }, out var fontAsset))
+            //{
+            //    fontAsset = TextUtils.CreateFontAssetFromTmp(DstEntityManager, tmp.font);
+            //}
+
             DstEntityManager.AddComponentData(entity, new TextRenderer()
             {
                 Font = fontAsset,
@@ -200,20 +196,13 @@ namespace DotsUI.Hybrid
             return true;
         }
 
-        private void ConvertImage(Image image)
+		private void ConvertImage(Image image)
         {
             var entity = GetPrimaryEntity(image);
-            var sprite = image.sprite ?? m_DefaultSprite;
-            var asset = new SpriteAsset()
-            {
-                Value = sprite,
-            };
-            if (!TryGetAssetEntity(asset, out var assetEntity))
-            {
-                assetEntity = DstEntityManager.CreateEntity(typeof(SpriteAsset), typeof(SpriteVertexData));
-                DstEntityManager.SetSharedComponentData(assetEntity, new SpriteAsset { Value = sprite });
-            }
-            SpriteImage spriteImage = new SpriteImage
+			var sprite = image.sprite ?? DefaultSprite;
+			var assetEntity = GetPrimaryEntity(sprite);
+
+			SpriteImage spriteImage = new SpriteImage
             {
                 Asset = assetEntity
             };

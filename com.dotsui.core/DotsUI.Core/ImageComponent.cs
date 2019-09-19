@@ -5,47 +5,48 @@ using UnityEngine;
 
 namespace DotsUI.Core
 {
-    //public struct SvgImage : ISharedComponentData, IEquatable<SvgImage>
-    //{
-    //    public Sprite Value;
+	//public struct SvgImage : ISharedComponentData, IEquatable<SvgImage>
+	//{
+	//    public Sprite Value;
 
-    //    public bool Equals(SvgImage other)
-    //    {
-    //        return Equals(Value, other.Value);
-    //    }
+	//    public bool Equals(SvgImage other)
+	//    {
+	//        return Equals(Value, other.Value);
+	//    }
 
-    //    public override bool Equals(object obj)
-    //    {
-    //        if (ReferenceEquals(null, obj)) return false;
-    //        return obj is SvgImage other && Equals(other);
-    //    }
+	//    public override bool Equals(object obj)
+	//    {
+	//        if (ReferenceEquals(null, obj)) return false;
+	//        return obj is SvgImage other && Equals(other);
+	//    }
 
-    //    public override int GetHashCode()
-    //    {
-    //        return (Value != null ? Value.GetHashCode() : 0);
-    //    }
-    //}
+	//    public override int GetHashCode()
+	//    {
+	//        return (Value != null ? Value.GetHashCode() : 0);
+	//    }
+	//}
 
-    public struct SpriteAsset : ISharedComponentData, IEquatable<SpriteAsset>
-    {
-        public Sprite Value;
+	[Serializable]
+	public struct SpriteAsset : ISharedComponentData, IEquatable<SpriteAsset>
+	{
+	    public Sprite Value;
 
-        public bool Equals(SpriteAsset other)
-        {
-            return Equals(Value, other.Value);
-        }
+	    public bool Equals(SpriteAsset other)
+	    {
+	        return Equals(Value, other.Value);
+	    }
 
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            return obj is SpriteAsset other && Equals(other);
-        }
+	    public override bool Equals(object obj)
+	    {
+	        if (ReferenceEquals(null, obj)) return false;
+	        return obj is SpriteAsset other && Equals(other);
+	    }
 
-        public override int GetHashCode()
-        {
-            return (Value != null ? Value.GetHashCode() : 0);
-        }
-    }
+	    public override int GetHashCode()
+	    {
+	        return (Value != null ? Value.GetHashCode() : 0);
+	    }
+	}
 
     public struct SpriteImage : IComponentData
     {

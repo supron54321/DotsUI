@@ -15,10 +15,16 @@ namespace DotsUI.Core
 
         public static Entity CreateFontAssetFromTmp(EntityManager mgr, TMP_FontAsset font)
         {
-            var entity = mgr.CreateEntity(typeof(TextFontAsset), typeof(LegacyTextFontAsset), typeof(FontGlyphData));
+	        var entity = mgr.CreateEntity(typeof(TextFontAsset), typeof(LegacyTextFontAsset), typeof(FontGlyphData));
 
+			SetupFontAssetFromTmp(mgr, entity, font);
 
-            mgr.SetSharedComponentData(entity, new LegacyTextFontAsset
+			return entity;
+        }
+
+		public static void SetupFontAssetFromTmp(EntityManager mgr, Entity entity, TMP_FontAsset font)
+		{ 
+			mgr.SetSharedComponentData(entity, new LegacyTextFontAsset
             {
                 Asset = font,
                 FontMaterial = font.material
@@ -53,8 +59,6 @@ namespace DotsUI.Core
                     Metrics = glyph.Value.glyph.metrics
                 });
             }
-
-            return entity;
         }
 
         public static bool GetGlyph(ushort character, ref DynamicBuffer<FontGlyphData> glyphData, out FontGlyphData glyph)
