@@ -1,3 +1,5 @@
+# Unity forum thread:
+### https://forum.unity.com/threads/source-code-dotsui-open-source-ui-framework-for-dots.715880/
 
 # Changelog:
 ### [com.dotsui.core/CHANGELOG.md](com.dotsui.core/CHANGELOG.md)
