@@ -2,7 +2,7 @@
 
 namespace DotsUI.Core
 {
-
+    [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(CleanupSystemGroup))]
     class LayoutCleanSystem : ComponentSystem
     {

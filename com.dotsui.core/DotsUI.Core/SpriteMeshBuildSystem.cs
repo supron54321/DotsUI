@@ -5,6 +5,7 @@ using Unity.Jobs;
 
 namespace DotsUI.Core
 {
+    [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(ElementMeshUpdateSystemGroup))]
     internal class SpriteMeshBuildSystem : JobComponentSystem
     {

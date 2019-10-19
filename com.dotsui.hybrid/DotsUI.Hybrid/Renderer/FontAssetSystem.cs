@@ -4,6 +4,7 @@ using Unity.Jobs;
 
 namespace DotsUI.Hybrid
 {
+    [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(AssetUpdateSystemGroup))]
     class FontAssetSystem : JobComponentSystem
     {

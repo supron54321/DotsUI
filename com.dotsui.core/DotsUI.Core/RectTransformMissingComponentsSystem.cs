@@ -1,8 +1,8 @@
 ﻿using Unity.Entities;
-using UnityEngine;
 
 namespace DotsUI.Core
 {
+    [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))]
     class RectTransformMissingComponentsSystem : ComponentSystem
     {

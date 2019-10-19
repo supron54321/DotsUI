@@ -167,7 +167,7 @@ namespace DotsUI.Hybrid
             }
             DstEntityManager.AddBuffer<ControlVertexData>(entity);
             DstEntityManager.AddBuffer<ControlVertexIndex>(entity);
-            DstEntityManager.AddComponent(entity, typeof(RebuildElementMeshFlag));
+            DstEntityManager.AddComponentData(entity, new RebuildElementMeshFlag() { Rebuild = true });
         }
 
         private void ConvertGraphic(Graphic graphic)
@@ -210,7 +210,7 @@ namespace DotsUI.Hybrid
             DstEntityManager.AddBuffer<ControlVertexData>(entity);
             DstEntityManager.AddBuffer<ControlVertexIndex>(entity);
             DstEntityManager.AddComponent(entity, typeof(ElementVertexPointerInMesh));
-            DstEntityManager.AddComponent(entity, typeof(RebuildElementMeshFlag));
+            DstEntityManager.AddComponentData(entity, new RebuildElementMeshFlag(){Rebuild = true});
         }
 
         private void ConvertScaler(CanvasScaler scaler)
@@ -308,6 +308,30 @@ namespace DotsUI.Hybrid
             DstEntityManager.RemoveComponent(entity, typeof(Translation));
             DstEntityManager.RemoveComponent(entity, typeof(Rotation));
             DstEntityManager.RemoveComponent(entity, typeof(NonUniformScale));
+
+            if (transform.childCount != 0)
+            {
+                var childBuffer = DstEntityManager.AddBuffer<Child>(entity);
+                for (int i = 0; i < transform.childCount; i++)
+                {
+                    var child = transform.GetChild(i);
+                    if (child is RectTransform rectChild)
+                    {
+                        childBuffer.Add(new Child
+                        {
+                            Value = GetPrimaryEntity(rectChild)
+                        });
+                    }
+                }
+            }
+
+            if (HasPrimaryEntity(transform.parent))
+            {
+                DstEntityManager.AddComponentData(entity, new PreviousParent()
+                {
+                    Value = GetPrimaryEntity(transform.parent)
+                });
+            }
         }
         static TComponent GetOrAddComponent<TComponent>(EntityManager mgr, Entity entity) where TComponent : struct, IComponentData
         {

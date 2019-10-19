@@ -5,6 +5,7 @@ using Unity.Transforms;
 
 namespace DotsUI.Core
 {
+    [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))]
     public class LayoutDirtSystem : JobComponentSystem
     {

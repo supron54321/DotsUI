@@ -19,6 +19,7 @@ namespace DotsUI.Hybrid
             return SortId.CompareTo(other.SortId);
         }
     }
+    [ExecuteAlways]
     [UpdateInGroup(typeof(RenderSystemGroup))]
     class HybridRenderSystem : ComponentSystem
     {

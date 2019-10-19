@@ -10,6 +10,7 @@ using Unity.Transforms;
 
 namespace DotsUI.Core
 {
+    [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(ElementMeshUpdateSystemGroup))]
     public class MeshBatchSystem : JobComponentSystem

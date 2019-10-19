@@ -6,6 +6,7 @@ using UnityEngine.Rendering;
 
 namespace DotsUI.Hybrid
 {
+    [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))]
     class UpdateMissingCanvasComponents : ComponentSystem
     {

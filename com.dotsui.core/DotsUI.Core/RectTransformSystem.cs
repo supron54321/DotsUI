@@ -7,6 +7,7 @@ using Unity.Transforms;
 
 namespace DotsUI.Core
 {
+    [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(RectTransformSystemGroup))]
     public class RectTransformSystem : JobComponentSystem
     {
