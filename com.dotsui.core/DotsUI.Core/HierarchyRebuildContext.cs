@@ -17,6 +17,7 @@ namespace DotsUI.Core
         [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<ElementScale> ElementScaleFromEntity;
         [NativeDisableContainerSafetyRestriction] public ComponentDataFromEntity<WorldSpaceMask> WorldSpaceMaskFromEntity;
         [ReadOnly] public ComponentDataFromEntity<RectMask> RectMaskFromEntity;
+        [ReadOnly] public ComponentDataFromEntity<Disabled> DisabledFromEntity;
         [NativeDisableContainerSafetyRestriction] [WriteOnly] public ComponentDataFromEntity<ElementHierarchyIndex> HierarchyIndexFromEntity;
 
 
@@ -31,6 +32,7 @@ namespace DotsUI.Core
                 ElementScaleFromEntity = system.GetComponentDataFromEntity<ElementScale>(),
                 WorldSpaceMaskFromEntity = system.GetComponentDataFromEntity<WorldSpaceMask>(),
                 RectMaskFromEntity = system.GetComponentDataFromEntity<RectMask>(true),
+                DisabledFromEntity = system.GetComponentDataFromEntity<Disabled>(true),
                 HierarchyIndexFromEntity = system.GetComponentDataFromEntity<ElementHierarchyIndex>(),
             };
         }
@@ -38,6 +40,8 @@ namespace DotsUI.Core
 
         public void UpdateTransformRecursive(ref WorldSpaceRect parentLocalToWorldSpaceRect, WorldSpaceMask currentMask, Entity entity, float2 scale)
         {
+            if (DisabledFromEntity.Exists(entity))
+                return;
             var childTransform = RectTransformFromEntity[entity];
             var childLocalToWorld = RectTransformUtils.CalculateWorldSpaceRect(parentLocalToWorldSpaceRect, scale, childTransform);
             WorldSpaceRectFromEntity[entity] = childLocalToWorld;

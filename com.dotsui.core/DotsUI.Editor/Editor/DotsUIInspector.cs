@@ -40,12 +40,7 @@ public class DotsUIInspector : EditorWindow
         //ListView items = ui.Children().First().Children().First() as ListView;
         m_ListView = ui.Q<ListView>("EntityList");//.Q("unity-content-container");
         var itemTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Packages/com.unity.ui.builder/Editor/UI/Explorer/BuilderExplorerItem.uxml");
-        for (int i = 0; i < 10; i++)
-        {
-            var label = new Label();
-            label.text = "dsfdsfds";
-            m_ListView.contentContainer.Add(label);
-        }
+        m_ListView.onItemChosen += (item) => { Debug.Log(item); };
 
     }
 
@@ -79,7 +74,6 @@ public class DotsUIInspector : EditorWindow
             }
         });
         m_ListView.Clear();
-        Debug.Log($"Query: {rootQuery.CalculateEntityCount()}");
         using (var roots = rootQuery.ToEntityArray(Allocator.TempJob))
         {
             foreach (var root in roots)

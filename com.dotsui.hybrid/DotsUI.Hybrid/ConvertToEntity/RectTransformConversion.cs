@@ -28,10 +28,7 @@ namespace DotsUI.Hybrid
             Entities.ForEach((RectTransform transform) => { Convert(transform); });
             Entities.ForEach((Canvas canvas) => { ConvertCanvas(canvas); });
             Entities.ForEach((CanvasScaler scaler) => { ConvertScaler(scaler); });
-            Entities.ForEach((Image image) => { ConvertImage(image); ConvertGraphic(image); });
-            Entities.ForEach((Button selectable) => { ConvertButton(selectable); ConvertSelectable(selectable); });
             Entities.ForEach((TMP_InputField selectable) => { ConvertInputField(selectable); ConvertSelectable(selectable); });
-            Entities.ForEach((TextMeshProUGUI tmp) => { ConvertTextMeshPro(tmp); ConvertGraphic(tmp); });
             Entities.ForEach((ScrollRect scrollRect) => { ConvertScrollRect(scrollRect); });
             Entities.ForEach((Scrollbar scrollBar) => { ConvertScrollBar(scrollBar); ConvertSelectable(scrollBar); });
             Entities.ForEach((Mask mask) => { ConvertMask(mask); });
@@ -87,25 +84,19 @@ namespace DotsUI.Hybrid
             DstEntityManager.SetComponentData(entity, pointerInputReceiver);
         }
 
-        private void ConvertButton(Button button)
-        {
-            var entity = GetPrimaryEntity(button);
-            DstEntityManager.AddComponent(entity, typeof(Controls.Button));
-        }
-
         private void ConvertInputField(TMP_InputField inputField)
         {
             var entity = GetPrimaryEntity(inputField);
-            DstEntityManager.AddComponentData(entity, new DotsUI.Input.KeyboardInputReceiver());
-            DstEntityManager.AddBuffer<DotsUI.Input.KeyboardInputBuffer>(entity);
+            DstEntityManager.AddComponentData(entity, new Input.KeyboardInputReceiver());
+            DstEntityManager.AddBuffer<Input.KeyboardInputBuffer>(entity);
             Entity target = TryGetPrimaryEntity(inputField.textComponent);
             Entity placeholder = TryGetPrimaryEntity(inputField.placeholder);
-            DstEntityManager.AddComponentData(entity, new DotsUI.Controls.InputField()
+            DstEntityManager.AddComponentData(entity, new Controls.InputField()
             {
                 Target = target,
                 Placeholder = placeholder
             });
-            DstEntityManager.AddComponentData(entity, new DotsUI.Controls.InputFieldCaretState()
+            DstEntityManager.AddComponentData(entity, new Controls.InputFieldCaretState()
             {
                 CaretPosition = 0
             });
@@ -133,43 +124,6 @@ namespace DotsUI.Hybrid
             DstEntityManager.SetComponentData(entity, pointerInputReceiver);
         }
 
-        private void ConvertTextMeshPro(TextMeshProUGUI tmp)
-        {
-            var entity = GetPrimaryEntity(tmp);
-            var fontAsset = GetPrimaryEntity(tmp.font);
-
-            //if (tmp.font == null)
-            //{
-            //    Debug.LogError($"TextMeshProConverter - font asset cannot be null reference. Object: {tmp}", tmp);
-            //    return;
-            //}
-
-            //if (!TryGetAssetEntity(new LegacyTextFontAsset{ Asset = tmp.font, FontMaterial = tmp.font.material }, out var fontAsset))
-            //{
-            //    fontAsset = TextUtils.CreateFontAssetFromTmp(DstEntityManager, tmp.font);
-            //}
-
-            DstEntityManager.AddComponentData(entity, new TextRenderer()
-            {
-                Font = fontAsset,
-                Size = tmp.fontSize,
-                Alignment = tmp.alignment,
-                Bold = (tmp.fontStyle & FontStyles.Bold) == FontStyles.Bold,
-                Italic = (tmp.fontStyle & FontStyles.Italic) == FontStyles.Italic
-            });
-            var textBuffer = DstEntityManager.AddBuffer<TextData>(entity);
-            var content = tmp.text;
-            textBuffer.ResizeUninitialized(content.Length);
-            unsafe
-            {
-                fixed (char* textPtr = content)
-                    UnsafeUtility.MemCpy(textBuffer.GetUnsafePtr(), textPtr, content.Length * sizeof(char));
-            }
-            DstEntityManager.AddBuffer<ControlVertexData>(entity);
-            DstEntityManager.AddBuffer<ControlVertexIndex>(entity);
-            DstEntityManager.AddComponentData(entity, new RebuildElementMeshFlag() { Rebuild = true });
-        }
-
         private void ConvertGraphic(Graphic graphic)
         {
             var entity = GetPrimaryEntity(graphic);
@@ -182,35 +136,6 @@ namespace DotsUI.Hybrid
                 Value = new float4(1.0f, 1.0f, 1.0f, 1.0f)
             });
             DstEntityManager.AddComponent(entity, typeof(ElementVertexPointerInMesh));
-        }
-
-        bool TryGetAssetEntity<T>(T queryFilter, out Entity entity) where T : struct, ISharedComponentData
-        {
-            entity = default;
-            var assetQuery = DstEntityManager.CreateEntityQuery(ComponentType.ReadOnly<T>());
-            assetQuery.SetFilter(queryFilter);
-            if (assetQuery.CalculateEntityCount() == 0)
-                return false;
-            using (var assetEntityArray = assetQuery.ToEntityArray(Allocator.TempJob))
-                entity = assetEntityArray[0];
-            return true;
-        }
-
-		private void ConvertImage(Image image)
-        {
-            var entity = GetPrimaryEntity(image);
-			var sprite = image.sprite ?? DefaultSprite;
-			var assetEntity = GetPrimaryEntity(sprite);
-
-			SpriteImage spriteImage = new SpriteImage
-            {
-                Asset = assetEntity
-            };
-            DstEntityManager.AddComponentData(entity, spriteImage);
-            DstEntityManager.AddBuffer<ControlVertexData>(entity);
-            DstEntityManager.AddBuffer<ControlVertexIndex>(entity);
-            DstEntityManager.AddComponent(entity, typeof(ElementVertexPointerInMesh));
-            DstEntityManager.AddComponentData(entity, new RebuildElementMeshFlag(){Rebuild = true});
         }
 
         private void ConvertScaler(CanvasScaler scaler)

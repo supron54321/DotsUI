@@ -113,7 +113,8 @@ namespace DotsUI.Core
                     RebuildFlagFromEntity = GetComponentDataFromEntity<RebuildElementMeshFlag>(),
                     ElementScaleFromEntity = GetComponentDataFromEntity<ElementScale>(),
                     WorldSpaceMaskFromEntity = GetComponentDataFromEntity<WorldSpaceMask>(),
-                    RectMaskFromEntity = GetComponentDataFromEntity<RectMask>(true)
+                    RectMaskFromEntity = GetComponentDataFromEntity<RectMask>(true),
+                    DisabledFromEntity = GetComponentDataFromEntity<Disabled>(true)
                 }
 
             };
