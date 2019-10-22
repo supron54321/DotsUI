@@ -58,9 +58,24 @@ namespace DotsUI.Controls
             {
                 if (!ParentFromEntity.Exists(slider.FillRect))
                     return;
-                var fillParent = ParentFromEntity[slider.HandleRect].Value; 
+                var fillParent = ParentFromEntity[slider.FillRect].Value; 
                 if (fillParent == Entity.Null)  // Is this check necessary?
                     return;
+
+                int axis = slider.GetAxis();
+
+                float2 anchorMin = new float2(0.0f);
+                float2 anchorMax = new float2(1.0f);
+
+                if (slider.SliderDirection == Slider.Direction.RightToLeft || slider.SliderDirection == Slider.Direction.TopToBottom)
+                    anchorMin[axis] = 1 - slider.NormalizedValue;
+                else
+                    anchorMax[axis] = slider.NormalizedValue;
+
+                var fillRect = RebuildContext.RectTransformFromEntity[slider.FillRect];
+                fillRect.AnchorMin = anchorMin;
+                fillRect.AnchorMax = anchorMax;
+                RebuildContext.RectTransformFromEntity[slider.FillRect] = fillRect;
             }
 
             private void UpdateHandle(Slider slider)
