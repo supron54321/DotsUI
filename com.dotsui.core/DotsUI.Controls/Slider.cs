@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Unity.Entities;
+using Unity.Mathematics;
+using UnityEngine;
 
 namespace DotsUI.Controls
 {
@@ -39,5 +41,27 @@ namespace DotsUI.Controls
         public bool WholeNumbers;
         public Entity FillRect;
         public Entity HandleRect;
+
+        public float NormalizedValue
+        {
+            get
+            {
+                // TODO: Replace mathf with new math library
+                if (Mathf.Approximately(MinValue, MaxValue))
+                    return 0;
+                return math.saturate((Value - MinValue) / (MaxValue - MinValue));
+            }
+        }
+    }
+
+    static class SliderExtensions
+    {
+        public static int GetAxis(this Slider slider)
+        {
+            return slider.SliderDirection == Slider.Direction.LeftToRight ||
+                   slider.SliderDirection == Slider.Direction.RightToLeft
+                ? 0
+                : 1;
+        }
     }
 }

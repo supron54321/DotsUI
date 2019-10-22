@@ -69,7 +69,12 @@ namespace DotsUI.Input
         protected abstract JobHandle OnUpdateInput(JobHandle inputDeps, NativeHashMap<Entity, Entity> targetToEvent,
             BufferFromEntity<PointerInputBuffer> pointerBufferFromEntity);
 
-        protected abstract void OnCreateInput();
-        protected abstract void OnDestroyInput();
+        protected virtual void OnCreateInput()
+        {
+        }
+
+        protected virtual void OnDestroyInput()
+        {
+        }
     }
 }

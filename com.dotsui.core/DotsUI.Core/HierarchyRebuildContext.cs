@@ -1,4 +1,5 @@
-﻿using Unity.Collections;
+﻿using System;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -37,6 +38,13 @@ namespace DotsUI.Core
             };
         }
 
+        public void UpdateTransformRecursive(Entity parent, Entity entity)
+        {
+            var thisRect = WorldSpaceRectFromEntity[parent];
+            var thisMask = WorldSpaceMaskFromEntity[parent];
+            var thisScale = ElementScaleFromEntity[parent].Value;
+            UpdateTransformRecursive(ref thisRect,thisMask, entity, thisScale);
+        }
 
         public void UpdateTransformRecursive(ref WorldSpaceRect parentLocalToWorldSpaceRect, WorldSpaceMask currentMask, Entity entity, float2 scale)
         {

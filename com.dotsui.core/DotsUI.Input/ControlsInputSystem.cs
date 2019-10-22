@@ -46,7 +46,6 @@ namespace DotsUI.Input
     /// </summary>
     public struct PointerEventData
     {
-
         public int PointerId;
         public float2 Position;
         public float2 Delta;

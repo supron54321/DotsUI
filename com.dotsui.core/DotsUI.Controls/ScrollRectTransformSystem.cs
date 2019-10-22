@@ -11,7 +11,7 @@ using RectTransform = DotsUI.Core.RectTransform;
 namespace DotsUI.Controls
 {
     [UpdateInGroup(typeof(PostRectTransformSystemGroup))]
-    class ScrollRectSystem : JobComponentSystem
+    class ScrollRectTransformSystem : JobComponentSystem
     {
         private EntityQuery m_ScrollRectQuery;
 
