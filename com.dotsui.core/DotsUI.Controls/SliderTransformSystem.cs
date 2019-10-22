@@ -49,7 +49,18 @@ namespace DotsUI.Controls
             {
                 if (slider.HandleRect != Entity.Null)
                     UpdateHandle(slider);
+                if (slider.FillRect != Entity.Null)
+                    UpdateFill(slider);
                 RebuildContext.UpdateTransformRecursive(ParentFromEntity[entity].Value, entity);
+            }
+
+            private void UpdateFill(Slider slider)
+            {
+                if (!ParentFromEntity.Exists(slider.FillRect))
+                    return;
+                var fillParent = ParentFromEntity[slider.HandleRect].Value; 
+                if (fillParent == Entity.Null)  // Is this check necessary?
+                    return;
             }
 
             private void UpdateHandle(Slider slider)
@@ -65,16 +76,13 @@ namespace DotsUI.Controls
                 float2 anchorMin = new float2(0.0f);
                 float2 anchorMax = new float2(1.0f);
 
+                float anchorValue;
                 if (slider.SliderDirection == Slider.Direction.RightToLeft || slider.SliderDirection == Slider.Direction.TopToBottom)
-                {
-                    anchorMin[(int) axis] = 1 - slider.NormalizedValue;
-                    anchorMax[(int)axis] = 1 - slider.NormalizedValue;
-                }
+                    anchorValue = 1 - slider.NormalizedValue;
                 else
-                {
-                    anchorMin[(int)axis] = slider.NormalizedValue;
-                    anchorMax[(int) axis] = slider.NormalizedValue;
-                }
+                    anchorValue = slider.NormalizedValue;
+                anchorMin[axis] = anchorValue;
+                anchorMax[axis] = anchorValue;
 
                 var handleTransform = RebuildContext.RectTransformFromEntity[slider.HandleRect];
                 handleTransform.AnchorMin = anchorMin;
