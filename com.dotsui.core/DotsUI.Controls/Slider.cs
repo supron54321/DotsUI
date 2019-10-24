@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace DotsUI.Controls
 {
-    struct Slider : IComponentData
+    public struct Slider : IComponentData
     {
         public enum Direction
         {
@@ -52,7 +52,12 @@ namespace DotsUI.Controls
                     return 0;
                 return math.saturate((Value - MinValue) / (MaxValue - MinValue));
             }
-            set { Value = math.lerp(MinValue, MaxValue, value); }
+            set => SetAndValidateValue(math.lerp(MinValue, MaxValue, value));
+        }
+
+        private void SetAndValidateValue(float value)
+        {
+            Value = math.clamp(value, MinValue, MaxValue);
         }
 
         public bool Reversed
@@ -60,7 +65,7 @@ namespace DotsUI.Controls
             get { return SliderDirection == Direction.RightToLeft || SliderDirection == Direction.TopToBottom; }
         }
     }
-    struct SliderValueChangedEvent : IComponentData
+    public struct SliderValueChangedEvent : IComponentData
     {
 
     }
