@@ -90,5 +90,14 @@ namespace DotsUI.Core
             return (point.x >= rect.Min.x && point.x <= rect.Max.x) &&
                    (point.y >= rect.Min.y && point.y <= rect.Max.y);
         }
+
+        public static float2 WorldSpaceToLocalPoint(this WorldSpaceRect rect, float2 worldSpacePoint)
+        {
+            return worldSpacePoint - rect.Min;
+        }
+        public static float2 WorldSpaceToNormalizedLocalPoint(this WorldSpaceRect rect, float2 worldSpacePoint)
+        {
+            return (worldSpacePoint - rect.Min)/rect.Size;
+        }
     }
 }

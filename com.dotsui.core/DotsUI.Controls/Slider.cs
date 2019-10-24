@@ -42,6 +42,7 @@ namespace DotsUI.Controls
         public Entity FillRect;
         public Entity HandleRect;
 
+
         public float NormalizedValue
         {
             get
@@ -51,9 +52,18 @@ namespace DotsUI.Controls
                     return 0;
                 return math.saturate((Value - MinValue) / (MaxValue - MinValue));
             }
+            set { Value = math.lerp(MinValue, MaxValue, value); }
+        }
+
+        public bool Reversed
+        {
+            get { return SliderDirection == Direction.RightToLeft || SliderDirection == Direction.TopToBottom; }
         }
     }
+    struct SliderValueChangedEvent : IComponentData
+    {
 
+    }
     static class SliderExtensions
     {
         public static int GetAxis(this Slider slider)

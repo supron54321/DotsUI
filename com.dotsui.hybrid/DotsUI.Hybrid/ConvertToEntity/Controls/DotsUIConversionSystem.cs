@@ -21,7 +21,7 @@ namespace DotsUI.Hybrid
         protected void RegisterEventHandler(Entity entity, PointerEventType eventType)
         {
             var pointerInputReceiver = GetOrAddComponent<PointerInputReceiver>(DstEntityManager, entity);
-            pointerInputReceiver.ListenerTypes |= PointerEventType.SelectableGroup;
+            pointerInputReceiver.ListenerTypes |= eventType;
             DstEntityManager.SetComponentData(entity, pointerInputReceiver);
         }
     }

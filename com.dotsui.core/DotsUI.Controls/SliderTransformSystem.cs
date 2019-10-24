@@ -92,7 +92,7 @@ namespace DotsUI.Controls
                 float2 anchorMax = new float2(1.0f);
 
                 float anchorValue;
-                if (slider.SliderDirection == Slider.Direction.RightToLeft || slider.SliderDirection == Slider.Direction.TopToBottom)
+                if (slider.Reversed)
                     anchorValue = 1 - slider.NormalizedValue;
                 else
                     anchorValue = slider.NormalizedValue;
