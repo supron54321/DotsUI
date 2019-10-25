@@ -15,6 +15,7 @@ public class TestSlider : MonoBehaviour, IConvertGameObjectToEntity
         {
             ValueText = conversionSystem.GetPrimaryEntity(ValueText)
         });
+        dstManager.AddComponent(entity, typeof(SliderValueChangedEvent));
     }
 }
 

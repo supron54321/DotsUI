@@ -55,9 +55,11 @@ namespace DotsUI.Controls
             set => SetAndValidateValue(math.lerp(MinValue, MaxValue, value));
         }
 
-        private void SetAndValidateValue(float value)
+        public void SetAndValidateValue(float value)
         {
             Value = math.clamp(value, MinValue, MaxValue);
+            if (WholeNumbers)
+                Value = math.round(Value);
         }
 
         public bool Reversed
