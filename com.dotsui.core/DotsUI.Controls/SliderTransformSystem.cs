@@ -10,7 +10,7 @@ namespace DotsUI.Controls
 {
 
     [UpdateInGroup(typeof(PostRectTransformSystemGroup))]
-    class SliderTransformSystem : RectTransformRebuildSystem
+    class SliderTransformSystem : CustomRectTransformRebuildSystem
     {
         private EntityQuery m_SliderQuery;
 
