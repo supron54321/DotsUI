@@ -4,7 +4,7 @@ using Unity.Jobs;
 
 namespace DotsUI.Controls
 {
-    public abstract class CustomRectTransformRebuildSystem : JobComponentSystem
+    public abstract class ControlRectTransformRebuildSystem : JobComponentSystem
     {
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
