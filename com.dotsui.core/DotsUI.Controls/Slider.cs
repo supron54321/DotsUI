@@ -1,6 +1,6 @@
-﻿using Unity.Entities;
+﻿using DotsUI.Core;
+using Unity.Entities;
 using Unity.Mathematics;
-using UnityEngine;
 
 namespace DotsUI.Controls
 {
@@ -42,8 +42,7 @@ namespace DotsUI.Controls
         {
             get
             {
-                // TODO: Replace mathf with new math library
-                if (Mathf.Approximately(MinValue, MaxValue))
+                if (MathExtensions.Approximately(MinValue, MaxValue))
                     return 0;
                 return math.saturate((Value - MinValue) / (MaxValue - MinValue));
             }

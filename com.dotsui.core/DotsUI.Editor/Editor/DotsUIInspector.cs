@@ -1,6 +1,7 @@
 using System.Linq;
 using Boo.Lang;
 using DotsUI.Core;
+using DotsUI.Hybrid;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
@@ -80,9 +81,6 @@ public class DotsUIInspector : EditorWindow
             foreach (var root in roots)
             {
                 m_Roots.Add((entityManager.GetName(root), root));
-                m_Roots.Add((entityManager.GetName(root), root));
-                m_Roots.Add((entityManager.GetName(root), root));
-                m_Roots.Add((entityManager.GetName(root), root));
             }
 
             m_ListView.itemsSource = m_Roots;
@@ -93,6 +91,8 @@ public class DotsUIInspector : EditorWindow
     {
         var item = ((string, Entity)) obj[0];
         m_MeshProperties.contentContainer.Clear();
-        m_MeshProperties.contentContainer.Add(new Label($"TEST: {item.Item1}"));
+        var meshContainer = World.Active.EntityManager.GetSharedComponentData<CanvasMeshContainer>(item.Item2);
+        m_MeshProperties.contentContainer.Add(new Label($"Vertices: {meshContainer.UnityMesh.vertexCount}"));
+        m_MeshProperties.contentContainer.Add(new Label($"SubMeshes: {meshContainer.UnityMesh.subMeshCount}"));
     }
 }

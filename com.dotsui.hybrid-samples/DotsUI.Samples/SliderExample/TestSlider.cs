@@ -30,7 +30,7 @@ public class TestSliderSystem : ComponentSystem
 {
     protected override void OnUpdate()
     {
-        Entities.ForEach((Entity entity, ref TestSliderComponent valueTarget, ref Slider slider,
+        Entities.WithAllReadOnly<TestSliderComponent, Slider, SliderValueChangedEvent>().ForEach((Entity entity, ref TestSliderComponent valueTarget, ref Slider slider,
             ref SliderValueChangedEvent evt) =>
         {
             var textData = EntityManager.GetBuffer<TextData>(valueTarget.ValueText);

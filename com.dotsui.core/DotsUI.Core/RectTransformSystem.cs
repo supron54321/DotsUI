@@ -105,17 +105,7 @@ namespace DotsUI.Core
                 ChildType = childType,
                 ConstantPhysicalScaler = GetArchetypeChunkComponentType<CanvasConstantPhysicalSizeScaler>(true),
                 ConstantPixelScaler = GetArchetypeChunkComponentType<CanvasConstantPixelSizeScaler>(true),
-                RebuildContext = new HierarchyRebuildContext()
-                {
-                    ChildrenFromEntity = GetBufferFromEntity<Child>(true),
-                    WorldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>(),
-                    RectTransformFromEntity = GetComponentDataFromEntity<RectTransform>(true),
-                    RebuildFlagFromEntity = GetComponentDataFromEntity<RebuildElementMeshFlag>(),
-                    ElementScaleFromEntity = GetComponentDataFromEntity<ElementScale>(),
-                    WorldSpaceMaskFromEntity = GetComponentDataFromEntity<WorldSpaceMask>(),
-                    RectMaskFromEntity = GetComponentDataFromEntity<RectMask>(true),
-                    DisabledFromEntity = GetComponentDataFromEntity<Disabled>(true)
-                }
+                RebuildContext = HierarchyRebuildContext.Create(this)
 
             };
             var updateHierarchyJobHandle = updateHierarchyJob.Schedule(m_Group, inputDeps);
