@@ -1,5 +1,4 @@
 ﻿using DotsUI.Core;
-using Unity.Collections;
 using Unity.Entities;
 
 namespace DotsUI.Controls

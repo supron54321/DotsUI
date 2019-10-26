@@ -1,14 +1,12 @@
-﻿using System;
-using System.Diagnostics;
-using DotsUI.Core;
+﻿using DotsUI.Core;
 using DotsUI.Core.Utils;
 using DotsUI.Input;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine.Animations;
 
 namespace DotsUI.Controls
 {
@@ -19,6 +17,7 @@ namespace DotsUI.Controls
         private EntityQuery m_SliderQuery;
         private InputHandleBarrier m_Barrier;
 
+        [BurstCompile]
         struct SliderInputJob : IJobChunk
         {
             public ArchetypeChunkComponentType<Slider> SliderComponentType;

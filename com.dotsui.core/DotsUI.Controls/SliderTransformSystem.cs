@@ -1,18 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using DotsUI.Controls;
-using DotsUI.Core;
+﻿using DotsUI.Core;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine.EventSystems;
 
 namespace DotsUI.Controls
 {
@@ -27,6 +19,7 @@ namespace DotsUI.Controls
             m_SliderQuery = GetEntityQuery(ComponentType.ReadOnly<Slider>(), ComponentType.ReadWrite<WorldSpaceRect>());
         }
 
+        [BurstCompile]
         struct UpdateSliderTransform : IJobChunk
         {
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
