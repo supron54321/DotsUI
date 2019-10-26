@@ -7,6 +7,7 @@
 ### Added
 
 * Slider control
+* DotsUI inspector window (now displays only UI mesh info)
 
 ### Fixed
 
