@@ -51,35 +51,24 @@ namespace DotsUI.Controls
 
             private void UpdateFill(Slider slider)
             {
-                if (!ParentFromEntity.Exists(slider.FillRect))
-                    return;
-                var fillParent = ParentFromEntity[slider.FillRect].Value; 
-                if (fillParent == Entity.Null)  // Is this check necessary?
-                    return;
+                if (!IsValidRect(slider.FillRect)) return;
 
                 int axis = slider.GetAxis();
 
                 float2 anchorMin = new float2(0.0f);
                 float2 anchorMax = new float2(1.0f);
 
-                if (slider.SliderDirection == Slider.Direction.RightToLeft || slider.SliderDirection == Slider.Direction.TopToBottom)
+                if (slider.Reversed)
                     anchorMin[axis] = 1 - slider.NormalizedValue;
                 else
                     anchorMax[axis] = slider.NormalizedValue;
 
-                var fillRect = RebuildContext.RectTransformFromEntity[slider.FillRect];
-                fillRect.AnchorMin = anchorMin;
-                fillRect.AnchorMax = anchorMax;
-                RebuildContext.RectTransformFromEntity[slider.FillRect] = fillRect;
+                SetAnchors(slider.FillRect, anchorMin, anchorMax);
             }
 
             private void UpdateHandle(Slider slider)
             {
-                if (!ParentFromEntity.Exists(slider.HandleRect))
-                    return;
-                var handleParent = ParentFromEntity[slider.HandleRect].Value;
-                if (handleParent == Entity.Null)
-                    return;
+                if (!IsValidRect(slider.HandleRect)) return;
 
                 int axis = slider.GetAxis();
 
@@ -94,10 +83,25 @@ namespace DotsUI.Controls
                 anchorMin[axis] = anchorValue;
                 anchorMax[axis] = anchorValue;
 
-                var handleTransform = RebuildContext.RectTransformFromEntity[slider.HandleRect];
-                handleTransform.AnchorMin = anchorMin;
-                handleTransform.AnchorMax = anchorMax;
-                RebuildContext.RectTransformFromEntity[slider.HandleRect] = handleTransform;
+                SetAnchors(slider.HandleRect, anchorMin, anchorMax);
+            }
+
+            private bool IsValidRect(Entity rectEntity)
+            {
+                if (!ParentFromEntity.Exists(rectEntity))
+                    return false;
+                var fillParent = ParentFromEntity[rectEntity].Value;
+                if (fillParent == Entity.Null) // Is this check necessary?
+                    return false;
+                return true;
+            }
+
+            private void SetAnchors(Entity rectEntity, float2 anchorMin, float2 anchorMax)
+            {
+                var rectTransform = RebuildContext.RectTransformFromEntity[rectEntity];
+                rectTransform.AnchorMin = anchorMin;
+                rectTransform.AnchorMax = anchorMax;
+                RebuildContext.RectTransformFromEntity[rectEntity] = rectTransform;
             }
         }
 
