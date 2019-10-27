@@ -1,12 +1,12 @@
 {
   "name": "com.dotsui.hybrid-samples",
   "displayName": "DotsUI Hybrid Samples",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "unity": "2019.3",
   "description": "This package contains DotsUI samples",
   "type": "template",
   "hideInEditor": false,
   "dependencies": {
-    "com.dotsui.hybrid": "0.3.0"
+    "com.dotsui.hybrid": "0.4.0"
   }
 }

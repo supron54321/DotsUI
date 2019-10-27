@@ -1,7 +1,7 @@
 {
   "name": "com.dotsui.core",
   "displayName": "DotsUI Core",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "unity": "2019.3",
   "description": "This package contains DotsUI core. Core is based on pure DOTS, without UnityEngine dependencies. If you are looking for the complete UI solution, download DotsUI.UnityEngine or DotsUI.Tiny packages.",
   "type": "library",

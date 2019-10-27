@@ -1,11 +1,11 @@
 {
   "name": "com.dotsui.hybrid",
   "displayName": "DotsUI Hybrid UnityEngine module",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "unity": "2019.3",
   "type": "template",
   "hideInEditor": false,
   "dependencies": {
-    "com.dotsui.core": "0.3.0"
+    "com.dotsui.core": "0.4.0"
   }
 }
