@@ -19,7 +19,6 @@
 * InputField (very simple implementation)
 * Slider
 * Rect mask
-* 
 
 ## Low-level input events:
 
