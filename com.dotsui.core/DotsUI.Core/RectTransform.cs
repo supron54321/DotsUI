@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -28,82 +27,19 @@ namespace DotsUI.Core
         public float2 Max;
     }
 
-    /// <summary>
-    /// Updated by RectTransformSystem. Consider it read-only
-    /// </summary>
-    public struct WorldSpaceRect : IComponentData
+    public struct ElementCanvasReference : ISharedComponentData
     {
-        public float2 Min;
-        public float2 Max;
+        public Entity Canvas;
 
-        public float Width
+        public override int GetHashCode()
         {
-            get { return Max.x - Min.x; }
+            return Canvas.Index;
         }
-        public float Height
-        {
-            get { return Max.y - Min.y; }
-        }
-        public float2 Center
-        {
-            get { return (Min + Max) * 0.5f; }
-        }
+    }
 
-        public float2 TopLeft
-        {
-            get { return new float2(Min.x, Max.y); }
-        }
-
-        public float2 TopCenter
-        {
-            get { return new float2(Center.x, Max.y); }
-        }
-
-        public float2 TopRight
-        {
-            get { return new float2(Max.x, Max.y); }
-        }
-        
-        
-        public float2 BottomLeft
-        {
-            get { return new float2(Min.x, Min.y); }
-        }
-
-        public float2 BottomCenter
-        {
-            get { return new float2(Center.x, Min.y); }
-        }
-
-        public float2 BottomRight
-        {
-            get { return new float2(Max.x, Min.y); }
-        }
-
-        public float2 Size
-        {
-            get
-            {
-                return new float2(Max-Min);
-            }
-        }
-
-        [Obsolete]
-        public float CalculateWidth()
-        {
-            return Max.x - Min.x;
-        }
-
-        [Obsolete]
-        public float CalculateHeight()
-        {
-            return Max.y - Min.y;
-        }
-
-        public Rect CreateRect()
-        {
-            return new Rect(Min, Max - Min);
-        }
+    public struct ElementHierarchyIndex : IComponentData
+    {
+        public int Value;
     }
 
     /// <summary>

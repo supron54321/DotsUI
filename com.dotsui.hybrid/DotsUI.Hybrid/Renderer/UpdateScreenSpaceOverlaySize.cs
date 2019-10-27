@@ -7,6 +7,7 @@ using UnityEngine;
 namespace DotsUI.Hybrid
 {
 
+    [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(BeforeRectTransformUpdateGroup))]
     class UpdateScreenSpaceOverlaySize : ComponentSystem
     {

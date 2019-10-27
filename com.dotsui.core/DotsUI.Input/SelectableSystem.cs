@@ -15,8 +15,6 @@ namespace DotsUI.Input
         private EntityQuery m_SelectableGroup;
 
         private InputHandleBarrier m_Barrier;
-        // NativeHashMap is the best option since it checks if entity was already added to list and supports parallel writing.
-        // Unfortunately it doesn't support deallocation on job completion. We need persistent container to keep updated entities
 
         protected override void OnCreateInput()
         {

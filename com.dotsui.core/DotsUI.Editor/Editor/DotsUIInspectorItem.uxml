@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement style="flex-grow: 1; flex-direction: row;">
+        <Style src="DotsUIInspectorItem.uss" />
+        <ui:VisualElement name="unity-checkmark" class="unity-toggle-checkmark" style="width: 13px; height: 13px;" />
+        <ui:Label text="Label" />
+    </ui:VisualElement>
+</ui:UXML>

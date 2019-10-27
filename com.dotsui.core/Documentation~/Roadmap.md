@@ -2,14 +2,11 @@
 
 ## TODO (MVP):
 
-
 * RawImage
 * Toggle
-* Slider
 * Dropdown
 * Mobile input
 * Better InputField implementation
-* More controls (Scroll view, slider, dropdown)
 * Complex layout systems (ContentSizeFitter, LayoutGroups)
 * Test coverage
 

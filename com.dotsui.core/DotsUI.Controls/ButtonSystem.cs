@@ -62,20 +62,6 @@ namespace DotsUI.Controls
             }
         }
 
-        [BurstCompile]
-        struct AddComponentJob : IJob
-        {
-            public EntityCommandBuffer CommandBuffer;
-            public NativeQueue<Entity> ToAdd;
-            public ComponentType ClickedEventComponent;
-
-            public void Execute()
-            {
-                while (ToAdd.TryDequeue(out var entity))
-                    CommandBuffer.AddComponent(entity, ClickedEventComponent);
-            }
-        }
-
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             var commandBuff = m_Barrier.CreateAddFlagComponentCommandBuffer<ButtonClickedEvent>();

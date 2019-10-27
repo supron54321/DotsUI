@@ -1,0 +1,20 @@
+{
+    "name": "DotsUI.Editor",
+    "references": [
+        "GUID:d7eb76657380f0942b1816e18f4aa72a",
+        "GUID:10ff06164b46ab543955b32318731559",
+        "GUID:734d92eba21c94caba915361bd5ac177",
+        "GUID:a5baed0c9693541a5bd947d336ec7659"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

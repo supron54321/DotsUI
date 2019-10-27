@@ -23,11 +23,11 @@ namespace DotsUI.Controls
         public Entity ParentScrollRect;
         public float Value;
         /// <summary>
-        /// Calculated automatically in ScrollRectSystem
+        /// Calculated automatically in ScrollRectTransformSystem
         /// </summary>
         public float HandleDragSensitivity;
         /// <summary>
-        /// Calculated automatically in ScrollRectSystem
+        /// Calculated automatically in ScrollRectTransformSystem
         /// </summary>
         public float RectDragSensitivity;
     }

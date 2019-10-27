@@ -30,6 +30,8 @@ namespace DotsUI.Core
         public float BoldStyle;
         public float NormalStyle;
     }
+
+    [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(ElementMeshUpdateSystemGroup))]
     public class TextMeshBuildSystem : JobComponentSystem
     {
@@ -149,13 +151,13 @@ namespace DotsUI.Core
                             uv.xy = uv.xy + cut.UvMin;
                             uv.zw = uv.zw - cut.UvMax;
 
-                            triangles.Add(new ControlVertexIndex() {Value = startIndex + 2});
-                            triangles.Add(new ControlVertexIndex() {Value = startIndex + 1});
-                            triangles.Add(new ControlVertexIndex() {Value = startIndex});
+                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 2 });
+                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 1 });
+                            triangles.Add(new ControlVertexIndex() { Value = startIndex });
 
-                            triangles.Add(new ControlVertexIndex() {Value = startIndex + 3});
-                            triangles.Add(new ControlVertexIndex() {Value = startIndex + 2});
-                            triangles.Add(new ControlVertexIndex() {Value = startIndex});
+                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 3 });
+                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 2 });
+                            triangles.Add(new ControlVertexIndex() { Value = startIndex });
 
                             vertices.Add(new ControlVertexData()
                             {

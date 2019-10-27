@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DotsUI.Core;
 using Unity.Collections;
 using Unity.Entities;
@@ -9,16 +8,8 @@ using UnityEngine.Rendering;
 
 namespace DotsUI.Hybrid.Renderer
 {
-    class GuiProxy : MonoBehaviour
-    {
-        public Action OnRenderGui;
-
-        void OnGUI()
-        {
-            if(Event.current.type == EventType.Repaint)
-                OnRenderGui?.Invoke();
-        }
-    }
+    [ExecuteAlways]
+    [AlwaysUpdateSystem]
     [UpdateInGroup(typeof(RenderSystemGroup))]
     [UpdateAfter(typeof(HybridRenderSystem))]
     class ScreenSpaceOverlaySystem : JobComponentSystem
@@ -26,7 +17,7 @@ namespace DotsUI.Hybrid.Renderer
         private List<CommandBuffer> m_Buffers = new List<CommandBuffer>();
         private EntityQuery m_DirtyCanvasQuery;
 
-        private GuiProxy m_Proxy;
+        private ImguiProxy m_Proxy;
         private EntityQuery m_UnitializedCanvasQuery;
         private EntityQuery m_ScreenSpaceOverlayQuery;
         private EntityQuery m_DestroyedCanvasQuery;
@@ -43,7 +34,7 @@ namespace DotsUI.Hybrid.Renderer
                 {
                     ComponentType.ReadOnly<CanvasCommandBufferContainer>(),
                     ComponentType.ReadOnly<CanvasSortLayer>(),
-                    ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(), 
+                    ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
                     ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(),
                 }
             });
@@ -83,20 +74,30 @@ namespace DotsUI.Hybrid.Renderer
             });
 
             RequireForUpdate(m_UnitializedCanvasQuery);
-            m_Proxy = new UnityEngine.GameObject("ScreenSpaceOverlayGUIProxy_DO_NOT_DESTROY").AddComponent<GuiProxy>();
-            m_Proxy.OnRenderGui = OnRenderGui;
+            m_Proxy = GameObject.FindObjectOfType<ImguiProxy>();
+            if (m_Proxy == null)
+            {
+                m_Proxy = new UnityEngine.GameObject("ScreenSpaceOverlayGUIProxy_DO_NOT_DESTROY").AddComponent<ImguiProxy>();
+                GameObject.DontDestroyOnLoad(m_Proxy.gameObject);
+                m_Proxy.OnRenderGui = OnRenderGui;
+            }
         }
 
         protected override void OnDestroy()
         {
             m_Buffers.Clear();
-            if(m_Proxy != null)
-                GameObject.Destroy(m_Proxy.gameObject);
+            if (m_Proxy != null)
+            {
+                if(Application.isPlaying)
+                    GameObject.Destroy(m_Proxy.gameObject);
+                else
+                    GameObject.DestroyImmediate(m_Proxy.gameObject);
+            }
         }
 
         private void OnRenderGui()
         {
-            for(int i = 0; i < m_Buffers.Count; i++)
+            for (int i = 0; i < m_Buffers.Count; i++)
             {
                 Graphics.ExecuteCommandBuffer(m_Buffers[i]);
             }

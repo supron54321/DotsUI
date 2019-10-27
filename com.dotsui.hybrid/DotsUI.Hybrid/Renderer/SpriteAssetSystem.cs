@@ -1,9 +1,11 @@
 ﻿using DotsUI.Core;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace DotsUI.Hybrid
 {
+    [ExecuteAlways]
     [UpdateInGroup(typeof(AssetUpdateSystemGroup))]
     class SpriteAssetSystem : JobComponentSystem
     {

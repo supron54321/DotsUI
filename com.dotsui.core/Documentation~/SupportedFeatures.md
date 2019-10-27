@@ -4,6 +4,7 @@
 
 ### Render modes:
 * Screen space camera
+* Screen space overlay (through IMGUI callback)
 
 ### Scaling modes:
 * Constant pixel size
@@ -15,7 +16,9 @@
 * Image
 * Button
 * ScrollView
-* InputField (requires rework)
+* InputField (very simple implementation)
+* Slider
+* Rect mask
 
 ## Low-level input events:
 
@@ -36,3 +39,4 @@
 * Button click
 * InputField OnEndEdit
 * InputField OnReturn
+* Slider value changed
