@@ -9,14 +9,9 @@ using UnityEngine.UI;
 namespace DotsUI.Hybrid
 {
     [UpdateInGroup(typeof(GameObjectConversionGroup))]
-    class ScrollBarConversionSystem : SelectableConversionSystem
+    class ScrollBarConversionSystem : SelectableConversionSystem<Scrollbar>
     {
-        protected override void OnUpdate()
-        {
-            Entities.ForEach<Scrollbar>(ConvertScrollBar);
-        }
-
-        private void ConvertScrollBar(Scrollbar scrollBar)
+        protected override void ConvertUnityComponent(Scrollbar scrollBar)
         {
             var entity = GetPrimaryEntity(scrollBar);
             var scrollHandle = GetPrimaryEntity(scrollBar.handleRect);
@@ -32,7 +27,6 @@ namespace DotsUI.Hybrid
             });
             RegisterEventHandler(entity, Input.PointerEventType.BeginDrag | Input.PointerEventType.Drag |
                                          Input.PointerEventType.EndDrag);
-            ConvertSelectable(scrollBar);
         }
     }
 }

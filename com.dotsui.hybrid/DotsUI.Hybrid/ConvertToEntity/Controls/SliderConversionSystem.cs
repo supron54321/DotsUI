@@ -10,14 +10,9 @@ using UnityEngine.UI;
 namespace DotsUI.Hybrid
 {
     [UpdateInGroup(typeof(GameObjectConversionGroup))]
-    class SliderConversionSystem : SelectableConversionSystem
+    class SliderConversionSystem : SelectableConversionSystem<Slider>
     {
-        protected override void OnUpdate()
-        {
-            Entities.ForEach<Slider>(ConvertSlider);
-        }
-
-        private void ConvertSlider(Slider slider)
+        protected override void ConvertUnityComponent(Slider slider)
         {
             var entity = GetPrimaryEntity(slider);
             DstEntityManager.AddComponentData(entity, new DotsUI.Controls.Slider()
@@ -30,7 +25,6 @@ namespace DotsUI.Hybrid
                 SliderDirection = ConvertDirection(slider.direction),
                 WholeNumbers = slider.wholeNumbers
             });
-            ConvertSelectable(slider);
             RegisterEventHandler(entity, PointerEventType.Drag);
         }
 

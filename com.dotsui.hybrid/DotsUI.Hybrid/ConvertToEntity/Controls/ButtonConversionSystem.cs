@@ -9,18 +9,12 @@ using UnityEngine.UI;
 namespace DotsUI.Hybrid
 {
     [UpdateInGroup(typeof(GameObjectConversionGroup))]
-    class ButtonConversionSystem : SelectableConversionSystem
+    class ButtonConversionSystem : SelectableConversionSystem<Button>
     {
-        protected override void OnUpdate()
-        {
-            Entities.ForEach<Button>(ConvertButton);
-        }
-
-        private void ConvertButton(Button button)
+        protected override void ConvertUnityComponent(Button button)
         {
             var entity = GetPrimaryEntity(button);
             DstEntityManager.AddComponent(entity, typeof(Controls.Button));
-            ConvertSelectable(button);
         }
     }
 }
