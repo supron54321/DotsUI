@@ -1,4 +1,5 @@
-﻿using DotsUI.Core;
+﻿using System.Diagnostics;
+using DotsUI.Core;
 using DotsUI.Core.Utils;
 using DotsUI.Input;
 using Unity.Entities;
@@ -9,71 +10,38 @@ using Unity.Burst;
 namespace DotsUI.Controls
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
-    [UpdateAfter(typeof(ControlsInputSystem))]
+    [UpdateAfter(typeof(ControlsInputSystemGroup))]
     public class ButtonSystem : JobComponentSystem
     {
-        private EntityQuery m_EventGroup;
         private InputHandleBarrier m_Barrier;
+
+        private InputEventQuery m_InputQuery;
 
         protected override void OnCreate()
         {
             m_Barrier = World.GetOrCreateSystem<InputHandleBarrier>();
-            m_EventGroup = GetEntityQuery(new EntityQueryDesc()
-            {
-                All = new[]
-                {
-                    ComponentType.ReadWrite<PointerInputBuffer>(),
-                    ComponentType.ReadWrite<PointerEvent>()
-                }
-            });
+            GetEntityQuery(ComponentType.ReadOnly<Button>());
+            m_InputQuery = InputEventQuery.Create<Button>(EntityManager);
         }
 
         protected override void OnDestroy()
         {
         }
-        [BurstCompile]
-        private struct ProcessClicks : IJobChunk
-        {
-            [ReadOnly] public ArchetypeChunkComponentType<PointerEvent> EventType;
-            [ReadOnly] public ArchetypeChunkBufferType<PointerInputBuffer> BufferType;
-
-            [WriteOnly] public AddFlagComponentCommandBuffer.ParallelWriter ClickedButtons;
-            [ReadOnly] public ComponentDataFromEntity<Button> ButtonTargetType;
-
-            public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
-            {
-                var eventArray = chunk.GetNativeArray(EventType);
-                var bufferAccessor = chunk.GetBufferAccessor(BufferType);
-                for (int i = 0; i < chunk.Count; i++)
-                {
-                    if (ButtonTargetType.Exists(eventArray[i].Target))
-                    {
-                        var buff = bufferAccessor[i];
-                        for (int j = 0; j < buff.Length; j++)
-                        {
-                            if (buff[j].EventType == PointerEventType.Click)
-                            {
-                                ClickedButtons.TryAdd(eventArray[i].Target);
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var commandBuff = m_Barrier.CreateAddFlagComponentCommandBuffer<ButtonClickedEvent>();
-            ProcessClicks clicksJob = new ProcessClicks
+            var reader = m_InputQuery.CreateEventReader(Allocator.TempJob);
+
+            for (int i = 0; i < reader.EntityCount; i++)
             {
-                BufferType = GetArchetypeChunkBufferType<PointerInputBuffer>(),
-                EventType = GetArchetypeChunkComponentType<PointerEvent>(),
-                ButtonTargetType = GetComponentDataFromEntity<Button>(),
-                ClickedButtons = commandBuff.AsParallelWriter()
-            };
-            inputDeps = clicksJob.Schedule(m_EventGroup, inputDeps);
-            m_Barrier.AddJobHandleForProducer(inputDeps);
+                foreach (var ev in reader.GetEventsForTargetEntity(reader[i]))
+                {
+                    if (ev.EventType == PointerEventType.Click)
+                        EntityManager.AddComponent<ButtonClickedEvent>(reader[i]);
+                }
+            }
+
+            inputDeps = reader.Dispose(inputDeps);
             return inputDeps;
         }
     }

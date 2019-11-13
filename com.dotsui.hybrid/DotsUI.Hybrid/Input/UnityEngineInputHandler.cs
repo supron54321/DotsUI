@@ -7,7 +7,7 @@ using Unity.Mathematics;
 namespace DotsUI.Hybrid
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
-    [UpdateBefore(typeof(ControlsInputSystem))]
+    [UpdateBefore(typeof(ControlsInputSystemGroup))]
     class UnityEngineInputHandler : ComponentSystem
     {
         private readonly Event m_Events = new Event();

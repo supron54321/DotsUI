@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -8,47 +7,6 @@ using Unity.Transforms;
 
 namespace DotsUI.Input
 {
-    internal struct SpawnPointerEvents : IJob
-    {
-        [ReadOnly] public NativeMultiHashMap<Entity,  PointerInputBuffer> TargetToEvent;
-        public EntityCommandBuffer Ecb;
-        public EntityArchetype EventArchetype;
-
-        struct EventComparer : IComparer< PointerInputBuffer>
-        {
-            public int Compare(PointerInputBuffer x, PointerInputBuffer y) => x.EventId.CompareTo(y.EventId);
-        }
-
-        public void Execute()
-        {
-            var targets = TargetToEvent.GetKeyArray(Allocator.Temp);
-            NativeList<PointerInputBuffer> eventList = new NativeList<PointerInputBuffer>(4, Allocator.Temp);
-            for (int i = 0; i < targets.Length; i++)
-            {
-                var target = targets[i];
-                EventComparer eventComparer = new EventComparer();
-                if (TargetToEvent.TryGetFirstValue(target, out var item, out var it))
-                {
-                    var eventEntity = Ecb.CreateEntity(EventArchetype);
-                    Ecb.SetComponent(eventEntity, new PointerEvent
-                    {
-                        Target = target
-                    });
-                    var buffer = Ecb.SetBuffer<PointerInputBuffer>(eventEntity);
-                    do
-                    {
-                        eventList.Add(item);
-                    } while (TargetToEvent.TryGetNextValue(out item, ref it));
-                    eventList.Sort(eventComparer);
-                    buffer.ResizeUninitialized(eventList.Length);
-                    for (int j = 0; j < eventList.Length; j++)
-                        buffer[j] = eventList[j];
-                    eventList.Clear();
-                    eventList.Clear();
-                }
-            }
-        }
-    }
     [BurstCompile]
     internal struct UpdatePointerEvents : IJob
     {
@@ -70,6 +28,7 @@ namespace DotsUI.Input
 
         // used to preserve order in NativeMultiHashMap
         private int m_EventIdCounter;
+        public NativeList<Entity> PointerEventList;
 
         public void Execute()
         {
@@ -82,6 +41,7 @@ namespace DotsUI.Input
             UpdateButtons(mouseHit, ref state);
             UpdateDrag(mouseHit, ref state);
             StateFromEntity[StateEntity] = state;
+            PointerEventList.AddRange(TargetToEvent.GetKeyArray(Allocator.Temp));
         }
 
         private void UpdateDrag(Entity mouseHit, ref InputSystemState state)

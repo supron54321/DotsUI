@@ -7,6 +7,7 @@ namespace DotsUI.Core.Utils
     public class MicroCommandBufferSystem : EntityCommandBufferSystem
     {
         private List<AddFlagComponentCommandBuffer> m_AddFlagBuffers = new List<AddFlagComponentCommandBuffer>(32);
+        
         public AddFlagComponentCommandBuffer CreateAddFlagComponentCommandBuffer<T>() where T : IComponentData
         {
             var flagBuffer = new AddFlagComponentCommandBuffer(typeof(T), Allocator.TempJob);

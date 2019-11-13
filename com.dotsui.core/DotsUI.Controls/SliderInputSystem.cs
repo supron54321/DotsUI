@@ -11,7 +11,7 @@ using Unity.Transforms;
 namespace DotsUI.Controls
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
-    [UpdateAfter(typeof(ControlsInputSystem))]
+    [UpdateAfter(typeof(ControlsInputSystemGroup))]
     class SliderInputSystem : PointerInputComponentSystem<Slider>
     {
         private EntityQuery m_SliderQuery;

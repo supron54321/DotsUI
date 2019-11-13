@@ -11,7 +11,7 @@ using KeyCode = UnityEngine.KeyCode;    // Avoid whole UnityEngine namespace
 namespace DotsUI.Controls
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
-    [UpdateAfter(typeof(ControlsInputSystem))]
+    [UpdateAfter(typeof(ControlsInputSystemGroup))]
     public class InputFieldSystem : JobComponentSystem
     {
         private EntityQuery m_KeyboardEventGroup;

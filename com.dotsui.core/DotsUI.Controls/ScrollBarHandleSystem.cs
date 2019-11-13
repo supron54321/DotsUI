@@ -10,7 +10,7 @@ using Unity.Mathematics;
 namespace DotsUI.Controls
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
-    [UpdateAfter(typeof(ControlsInputSystem))]
+    [UpdateAfter(typeof(ControlsInputSystemGroup))]
     class ScrollBarHandleSystem : PointerInputComponentSystem<ScrollBar>
     {
         private EntityQuery m_ScrollBarQuery;
