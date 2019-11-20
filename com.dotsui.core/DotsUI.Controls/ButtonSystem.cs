@@ -15,13 +15,13 @@ namespace DotsUI.Controls
     {
         private InputHandleBarrier m_Barrier;
 
-        private InputEventQuery m_InputQuery;
+        private PointerEventQuery m_PointerQuery;
 
         protected override void OnCreate()
         {
             m_Barrier = World.GetOrCreateSystem<InputHandleBarrier>();
             GetEntityQuery(ComponentType.ReadOnly<Button>());
-            m_InputQuery = InputEventQuery.Create<Button>(EntityManager);
+            m_PointerQuery = PointerEventQuery.Create<Button>(EntityManager);
         }
 
         protected override void OnDestroy()
@@ -30,7 +30,7 @@ namespace DotsUI.Controls
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var reader = m_InputQuery.CreateEventReader(Allocator.TempJob);
+            var reader = m_PointerQuery.CreatePointerEventReader(Allocator.TempJob);
 
             for (int i = 0; i < reader.EntityCount; i++)
             {

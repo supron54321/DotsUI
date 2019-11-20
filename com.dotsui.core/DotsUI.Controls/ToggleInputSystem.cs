@@ -10,36 +10,28 @@ using Unity.Jobs;
 
 namespace DotsUI.Controls
 {
-    class ToggleInputSystem : PointerInputComponentSystem<Toggle>
+    class ToggleInputSystem : JobComponentSystem
     {
         private EntityQuery m_ToggleQuery;
-        protected override void OnCreateInput()
+        private PointerEventQuery m_EventQuery;
+        protected override void OnCreate()
         {
             m_ToggleQuery = GetEntityQuery(typeof(Toggle));
+            m_EventQuery = PointerEventQuery.Create<Toggle>(EntityManager);
         }
 
         struct UpdateToggle : IJobChunk
         {
-            public ArchetypeChunkEntityType EntityType;
-            public ArchetypeChunkComponentType<Toggle> ToggleType;
-            public ComponentDataFromEntity<Toggle> ToggleComponent;
+            public ComponentDataFromEntity<Toggle> ToggleComponentFromEntity;
             public NativeHashMap<Entity, Entity> TargetToEvent;
-            public BufferFromEntity<PointerInputBuffer> PointerBufferFromEntity;
+            public InputEventReader<PointerInputBuffer> EventReader;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
-                NativeArray<Entity> entityArray = chunk.GetNativeArray(EntityType);
-                NativeArray<Toggle> toggleArray = chunk.GetNativeArray(ToggleType);
-                for (int i = 0; i < entityArray.Length; i++)
-                {
-                    if (TargetToEvent.TryGetValue(entityArray[i], out var entity))
-                    {
-                    }
-                }
             }
         }
 
-        protected override JobHandle OnUpdateInput(JobHandle inputDeps, NativeHashMap<Entity, Entity> targetToEvent, BufferFromEntity<PointerInputBuffer> pointerBufferFromEntity)
+        protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             return inputDeps;
         }

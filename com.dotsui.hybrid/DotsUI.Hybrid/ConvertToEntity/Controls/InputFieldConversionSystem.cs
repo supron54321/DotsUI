@@ -16,7 +16,6 @@ namespace DotsUI.Hybrid
         {
             var entity = GetPrimaryEntity(inputField);
             DstEntityManager.AddComponentData(entity, new Input.KeyboardInputReceiver());
-            DstEntityManager.AddBuffer<Input.KeyboardInputBuffer>(entity);
             Entity target = TryGetPrimaryEntity(inputField.textComponent);
             Entity placeholder = TryGetPrimaryEntity(inputField.placeholder);
             DstEntityManager.AddComponentData(entity, new Controls.InputField()

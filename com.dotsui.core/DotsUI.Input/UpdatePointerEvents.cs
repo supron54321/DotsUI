@@ -8,6 +8,20 @@ using Unity.Transforms;
 namespace DotsUI.Input
 {
     [BurstCompile]
+    struct ClearNativeBuffers : IJob
+    {
+        [WriteOnly]
+        public NativeList<NativePointerButtonEvent> PointerEventBuffer;
+        [WriteOnly]
+        public NativeList<NativeKeyboardInputEvent> KeyboardEventBuffer;
+
+        public void Execute()
+        {
+            PointerEventBuffer.Clear();
+            KeyboardEventBuffer.Clear();
+        }
+    }
+    [BurstCompile]
     internal struct UpdatePointerEvents : IJob
     {
         [ReadOnly] public Entity StateEntity;
@@ -15,7 +29,6 @@ namespace DotsUI.Input
         [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<MouseInputFrameData> PointerFrameData;
 
         [ReadOnly]
-        [DeallocateOnJobCompletion]
         public NativeArray<NativePointerButtonEvent> PointerEvents;
 
         public NativeArray<MouseButtonState> ButtonStates;
@@ -25,15 +38,16 @@ namespace DotsUI.Input
         [ReadOnly] public float DragThreshold;
 
         public NativeMultiHashMap<Entity, PointerInputBuffer> TargetToEvent;
+        public NativeList<Entity> PointerEventList;
 
         // used to preserve order in NativeMultiHashMap
         private int m_EventIdCounter;
-        public NativeList<Entity> PointerEventList;
 
         public void Execute()
         {
             m_EventIdCounter = 0;
             TargetToEvent.Clear();
+            PointerEventList.Clear();
             var state = StateFromEntity[StateEntity];
             // Currently only mouse is fully supported. That's why I pick only the first hit entity (mouse) and skip touches
             Entity mouseHit = Hits[0];
@@ -41,7 +55,22 @@ namespace DotsUI.Input
             UpdateButtons(mouseHit, ref state);
             UpdateDrag(mouseHit, ref state);
             StateFromEntity[StateEntity] = state;
-            PointerEventList.AddRange(TargetToEvent.GetKeyArray(Allocator.Temp));
+            SaveTargetList();
+        }
+
+        private void SaveTargetList()
+        {
+            // NativeMultiHashMap duplicates keys. We need unique key list
+            // TODO: Need more efficient implementation
+            var tempKeyArray = TargetToEvent.GetKeyArray(Allocator.Temp);
+            var uniqueMap = new NativeHashMap<Entity, int>(tempKeyArray.Length, Allocator.Temp);
+            for (int i = 0; i < tempKeyArray.Length; i++)
+            {
+                uniqueMap.TryAdd(tempKeyArray[i], 0);
+            }
+            PointerEventList.AddRange(uniqueMap.GetKeyArray(Allocator.Temp));
+            tempKeyArray.Dispose();
+            uniqueMap.Dispose();
         }
 
         private void UpdateDrag(Entity mouseHit, ref InputSystemState state)

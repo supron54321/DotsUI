@@ -11,41 +11,39 @@ namespace DotsUI.Controls
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
     [UpdateAfter(typeof(ControlsInputSystemGroup))]
-    class ScrollRectDragSystem : PointerInputComponentSystem<ScrollRect>
+    class ScrollRectDragSystem : JobComponentSystem
     {
         private EntityQuery m_ScrollRectQuery;
+        private PointerEventQuery m_ScrollEventQuery;
         private InputHandleBarrier m_Barrier;
 
-        protected override void OnCreateInput()
+        protected override void OnCreate()
         {
             m_ScrollRectQuery = GetEntityQuery(ComponentType.ReadOnly<ScrollRect>());
+            m_ScrollEventQuery = PointerEventQuery.Create<ScrollRect>(EntityManager);
             m_Barrier = World.GetOrCreateSystem<InputHandleBarrier>();
         }
 
         [BurstCompile]
-        struct ScrollBarHandleJob : IJobChunk
+        struct ScrollBarHandleJob : IJob
         {
-            [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            [ReadOnly] public ArchetypeChunkComponentType<ScrollRect> ScrollRectType;
+            [ReadOnly] public ComponentDataFromEntity<ScrollRect> ScrollRectFromEntity;
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<ScrollBar> ScrollBarFormEntity;
-            [ReadOnly] public NativeHashMap<Entity, Entity> TargetToEvent;
-            [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerBufferFromEntity;
             public AddFlagComponentCommandBuffer.ParallelWriter AddFlagCommandBuff;
+            [ReadOnly]
+            public InputEventReader<PointerInputBuffer> EventReader;
 
-            public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+            public void Execute()
             {
-                var scrollRectArray = chunk.GetNativeArray(ScrollRectType);
-                var entityArray = chunk.GetNativeArray(EntityType);
-
-                for (int i = 0; i < chunk.Count; i++)
+                for (int i = 0; i < EventReader.EntityCount; i++)
                 {
-                    if (TargetToEvent.TryGetValue(entityArray[i], out var eventEntity))
+                    var target = EventReader[i];
+                    EventReader.GetFirstEvent(target, out var pointerEvent, out var it);
+                    var scrollRect = ScrollRectFromEntity[target];
+                    do
                     {
-                        var scrollRect = scrollRectArray[i];
-                        var pointerBuff = PointerBufferFromEntity[eventEntity];
-                        for (int j = 0; j < pointerBuff.Length; j++)
-                            HandleInputEvent(entityArray[i], scrollRect, pointerBuff[j]);
-                    }
+                        HandleInputEvent(target, scrollRect, pointerEvent);
+                    } while (EventReader.TryGetNextEvent(out pointerEvent, ref it));
                 }
             }
 
@@ -76,26 +74,26 @@ namespace DotsUI.Controls
             }
         }
 
-        protected override JobHandle OnUpdateInput(JobHandle inputDeps, NativeHashMap<Entity, Entity> targetToEvent, BufferFromEntity<PointerInputBuffer> pointerBufferFromEntity)
+        protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             var commandBuff = m_Barrier.CreateAddFlagComponentCommandBuffer<DirtyElementFlag>();
-            ScrollBarHandleJob scrollRectDragJob = new ScrollBarHandleJob()
+            var eventReader = m_ScrollEventQuery.CreatePointerEventReader(Allocator.TempJob);
+            if (eventReader.EntityCount > 0)
             {
-                AddFlagCommandBuff = commandBuff.AsParallelWriter(),
-                EntityType = GetArchetypeChunkEntityType(),
-                PointerBufferFromEntity = GetBufferFromEntity<PointerInputBuffer>(true),
-                ScrollBarFormEntity = GetComponentDataFromEntity<ScrollBar>(),
-                ScrollRectType = GetArchetypeChunkComponentType<ScrollRect>(true),
-                TargetToEvent = targetToEvent
+                ScrollBarHandleJob scrollRectDragJob = new ScrollBarHandleJob()
+                {
+                    AddFlagCommandBuff = commandBuff.AsParallelWriter(),
+                    EventReader = eventReader,
+                    ScrollBarFormEntity = GetComponentDataFromEntity<ScrollBar>(),
+                    ScrollRectFromEntity = GetComponentDataFromEntity<ScrollRect>(true),
 
-            };
-            inputDeps = scrollRectDragJob.Schedule(m_ScrollRectQuery, inputDeps);
-            m_Barrier.AddJobHandleForProducer(inputDeps);
+                };
+                inputDeps = scrollRectDragJob.Schedule(inputDeps);
+                m_Barrier.AddJobHandleForProducer(inputDeps);
+            }
+
+            inputDeps = eventReader.Dispose(inputDeps);
             return inputDeps;
-        }
-
-        protected override void OnDestroyInput()
-        {
         }
     }
 }

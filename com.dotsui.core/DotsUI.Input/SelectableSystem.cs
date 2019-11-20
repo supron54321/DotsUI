@@ -1,3 +1,4 @@
+using System.Drawing;
 using DotsUI.Core;
 using DotsUI.Core.Utils;
 using Unity.Burst;
@@ -15,7 +16,7 @@ namespace DotsUI.Input
         private EntityQuery m_SelectableGroup;
 
         private InputHandleBarrier m_Barrier;
-        private InputEventQuery m_EventQuery;
+        private PointerEventQuery m_EventQuery;
 
         protected override void OnCreate()
         {
@@ -29,7 +30,7 @@ namespace DotsUI.Input
                     ComponentType.ReadWrite<VertexColorValue>()
                 }
             });
-            m_EventQuery = InputEventQuery.Create<Selectable>(EntityManager);
+            m_EventQuery = PointerEventQuery.Create<Selectable>(EntityManager);
             RequireForUpdate(m_SelectableGroup);
         }
 
@@ -46,7 +47,7 @@ namespace DotsUI.Input
             // This is probably not the best idea to disable this restriction, since different selecatables can point to the same target
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<VertexColorMultiplier> ColorMultiplierFromEntity;
             public AddFlagComponentCommandBuffer.ParallelWriter ToUpdate;
-            public PointerInputEventReader EventReader;
+            public InputEventReader<PointerInputBuffer> EventReader;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
@@ -100,9 +101,10 @@ namespace DotsUI.Input
             private Selectable ParseEntityEvents(Entity entity, Selectable selectableState)
             {
                 EventReader.GetFirstEvent(entity, out var pointerEvent, out var it);
-                selectableState = ParseEvent(pointerEvent, selectableState);
-                while (EventReader.TryGetNextEvent(out pointerEvent, ref it))
+                do
+                {
                     selectableState = ParseEvent(pointerEvent, selectableState);
+                } while (EventReader.TryGetNextEvent(out pointerEvent, ref it));
                 return selectableState;
             }
 
@@ -125,22 +127,24 @@ namespace DotsUI.Input
         };
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var eventReader = m_EventQuery.CreateEventReader(Allocator.TempJob);
-            if (eventReader.EntityCount == 0)
-                return inputDeps;
-
-            NativeHashMap<Entity, int> updateQueue = new NativeHashMap<Entity, int>(m_SelectableGroup.CalculateEntityCount(), Allocator.TempJob);
-            SetColorValueJob setJob = new SetColorValueJob()
+            var eventReader = m_EventQuery.CreatePointerEventReader(Allocator.TempJob);
+            if (eventReader.EntityCount> 0)
             {
-                SelectableColorType = GetComponentDataFromEntity<SelectableColor>(true),
-                SelectableType = GetComponentDataFromEntity<Selectable>(),
-                ColorMultiplierFromEntity = GetComponentDataFromEntity<VertexColorMultiplier>(),
-                EventReader = eventReader,
-                ToUpdate = m_Barrier.CreateAddFlagComponentCommandBuffer<UpdateElementColor>().AsParallelWriter()
-            };
-            inputDeps = setJob.Schedule(m_SelectableGroup, inputDeps);
-            m_Barrier.AddJobHandleForProducer(inputDeps);
-            inputDeps = updateQueue.Dispose(inputDeps);
+
+                NativeHashMap<Entity, int> updateQueue =
+                    new NativeHashMap<Entity, int>(m_SelectableGroup.CalculateEntityCount(), Allocator.TempJob);
+                SetColorValueJob setJob = new SetColorValueJob()
+                {
+                    SelectableColorType = GetComponentDataFromEntity<SelectableColor>(true),
+                    SelectableType = GetComponentDataFromEntity<Selectable>(),
+                    ColorMultiplierFromEntity = GetComponentDataFromEntity<VertexColorMultiplier>(),
+                    EventReader = eventReader,
+                    ToUpdate = m_Barrier.CreateAddFlagComponentCommandBuffer<UpdateElementColor>().AsParallelWriter()
+                };
+                inputDeps = setJob.Schedule(m_SelectableGroup, inputDeps);
+                m_Barrier.AddJobHandleForProducer(inputDeps);
+                inputDeps = updateQueue.Dispose(inputDeps);
+            }
             inputDeps = eventReader.Dispose(inputDeps);
             return inputDeps;
         }
