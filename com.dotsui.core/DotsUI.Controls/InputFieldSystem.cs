@@ -71,7 +71,6 @@ namespace DotsUI.Controls
                 for (int i = 0; i < KeyboardEventReader.EntityCount; i++)
                 {
                     var inputFieldEntity = KeyboardEventReader[i];
-                    UnityEngine.Debug.Log($"kbd: {inputFieldEntity}");
                     var thisInputField = InputFieldFromEntity[inputFieldEntity];
 
                     var textData = TextDataFromEntity[thisInputField.Target];

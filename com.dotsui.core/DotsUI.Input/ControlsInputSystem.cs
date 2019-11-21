@@ -72,12 +72,6 @@ namespace DotsUI.Input
         public Entity SelectedEntity;
     }
 
-    public struct ControlPointerEvent : IComponentData
-    {
-        public int EventIdx;
-        public int EventCount;
-    }
-
     [UpdateInGroup(typeof(InputSystemGroup))]
     public class ControlsInputSystemGroup : ComponentSystemGroup
     {
@@ -239,13 +233,6 @@ namespace DotsUI.Input
                 if (EntityManager.HasComponent(entityList[i], requiredType))
                     ret.Add(entityList[i]);
             }
-
-            if (ret.Length > 1)
-            {
-                for(int i = 0; i < ret.Length; i++)
-                    UnityEngine.Debug.Log($"registered: {ret[i]}");
-            }
-
             return ret;
         }
 
