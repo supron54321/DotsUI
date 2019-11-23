@@ -33,15 +33,6 @@ namespace DotsUI.Input
         
         SelectableGroup = Down | Up | Click | Enter | Exit | Selected | Deselected,
     }
-    public struct OnLostFocusEvent : IComponentData
-    {
-
-    }
-
-    public struct OnFocusEvent : IComponentData
-    {
-
-    }
     public struct PointerInputReceiver : IComponentData
     {
         public PointerEventType ListenerTypes;
