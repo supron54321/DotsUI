@@ -23,7 +23,7 @@ namespace DotsUI.Core
                     ComponentType.ReadOnly<RebuildElementMeshFlag>(), 
                 }
             });
-            m_SpriteGroup.SetFilterChanged(typeof(RebuildElementMeshFlag));
+            m_SpriteGroup.SetChangedVersionFilter(typeof(RebuildElementMeshFlag));
         }
 
         [BurstCompile]

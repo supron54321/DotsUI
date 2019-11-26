@@ -61,7 +61,7 @@ namespace DotsUI.Hybrid
             //}
 
             var writer = m_ControlsInputSystem.GetEventWriter();
-
+            
             for (int i = 0; i < 3; i++)
             {
                 if (UnityEngine.Input.GetMouseButtonDown(i))
