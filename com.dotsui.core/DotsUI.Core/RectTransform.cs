@@ -4,6 +4,7 @@ using Unity.Mathematics;
 
 namespace DotsUI.Core
 {
+    [WriteGroup(typeof(Unity.Transforms.Child))]
     public struct RectTransform : IComponentData
     {
         public float2 AnchorMin;

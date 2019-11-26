@@ -9,27 +9,6 @@ using UnityEngine.TextCore;
 
 namespace DotsUI.Core
 {
-    public struct GlyphInfo
-    {
-        public float Scale;
-        public GlyphRect Rect;
-        public GlyphMetrics Metrics;
-    }
-
-    public struct FontInfo
-    {
-        public float LineHeight;
-        public float NormalSpace;
-        public float BoldSpace;
-        public float AscentLine;
-        public float CapLine;
-        public float MeanLine;
-        public float Baseline;
-        public float DescentLine;
-        public float PointSize;
-        public float BoldStyle;
-        public float NormalStyle;
-    }
 
     [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(ElementMeshUpdateSystemGroup))]
@@ -38,7 +17,6 @@ namespace DotsUI.Core
         [BurstCompile(FloatMode = FloatMode.Fast)]
         private struct TextChunkBuilder : IJobChunk
         {
-            [ReadOnly] public ArchetypeChunkEntityType TextEntities;
             [ReadOnly] public ArchetypeChunkComponentType<WorldSpaceRect> WorldSpaceRectType;
             [ReadOnly] public ArchetypeChunkComponentType<VertexColorValue> ColorValueType;
             [ReadOnly] public ArchetypeChunkComponentType<VertexColorMultiplier> ColorMultiplierType;
@@ -222,13 +200,13 @@ namespace DotsUI.Core
                 },
                 Options = EntityQueryOptions.FilterWriteGroup
             });
+            m_TextGroup.SetChangedVersionFilter(ComponentType.ReadOnly(typeof(WorldSpaceRect)));
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
             TextChunkBuilder chunkJob = new TextChunkBuilder()
             {
-                TextEntities = GetArchetypeChunkEntityType(),
                 TextBufferType = GetArchetypeChunkBufferType<TextData>(true),
                 WorldSpaceRectType = GetArchetypeChunkComponentType<WorldSpaceRect>(true),
                 ColorValueType = GetArchetypeChunkComponentType<VertexColorValue>(true),
@@ -242,27 +220,9 @@ namespace DotsUI.Core
                 ElementScaleType = GetArchetypeChunkComponentType<ElementScale>(true),
                 WorldSpaceMaskType = GetArchetypeChunkComponentType<WorldSpaceMask>(true)
             };
-            //inputDeps = chunkJob.Schedule(chunkJob.TextEntities.Length, 1, inputDeps);
             inputDeps = chunkJob.Schedule(m_TextGroup, inputDeps);
-            //}
 
             return inputDeps;
-        }
-
-        private NativeHashMap<ushort, GlyphInfo> CreateGlyphDataLookupTable(TMP_FontAsset font, Allocator allocator)
-        {
-            NativeHashMap<ushort, GlyphInfo> ret = new NativeHashMap<ushort, GlyphInfo>(font.glyphLookupTable.Count, allocator);
-            foreach (var glyph in font.characterLookupTable)
-            {
-                ret.TryAdd((ushort)glyph.Key, new GlyphInfo()
-                {
-                    Scale = glyph.Value.scale,
-                    Rect = glyph.Value.glyph.glyphRect,
-                    Metrics = glyph.Value.glyph.metrics
-                });
-            }
-
-            return ret;
         }
     }
 }

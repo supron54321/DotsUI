@@ -120,12 +120,12 @@ namespace DotsUI.Input
                 {
                     typeof(Parent)
                 },
-                Options = EntityQueryOptions.FilterWriteGroup
+                Options = EntityQueryOptions.Default
             });
 
             EntityManager.CreateEntity(typeof(InputSystemState));
-            EntityManager.CreateEntity(typeof(NativePointerInputContainer), typeof(NativePointerButtonEvent), typeof(NativePointerState));
-            EntityManager.CreateEntity(typeof(NativeKeyboardInputContainer), typeof(NativeKeyboardInputEvent));
+            //EntityManager.CreateEntity(typeof(NativePointerInputContainer), typeof(NativePointerButtonEvent), typeof(NativePointerState));
+            //EntityManager.CreateEntity(typeof(NativeKeyboardInputContainer), typeof(NativeKeyboardInputEvent));
         }
 
         protected override void OnDestroy()
@@ -167,7 +167,7 @@ namespace DotsUI.Input
                 Roots = roots,
                 ChildrenFromEntity = childrenFromEntity,
                 Hits = perCanvasHits,
-                LocalToWorldFromEntity = worldSpaceRectFromEntity,
+                WorldSpaceRectFromEntity = worldSpaceRectFromEntity,
                 PointerInputReceiver = pointerReceiverFromEntity,
                 PointersPosition = pointerFrameData
             };

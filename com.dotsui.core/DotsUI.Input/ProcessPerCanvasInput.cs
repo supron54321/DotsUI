@@ -13,7 +13,7 @@ namespace DotsUI.Input
     internal struct ProcessPerCanvasInput : IJobParallelFor
     {
         [ReadOnly] public NativeArray<Entity> Roots;
-        [ReadOnly] public ComponentDataFromEntity<WorldSpaceRect> LocalToWorldFromEntity;
+        [ReadOnly] public ComponentDataFromEntity<WorldSpaceRect> WorldSpaceRectFromEntity;
         [ReadOnly] public ComponentDataFromEntity<PointerInputReceiver> PointerInputReceiver;
         [ReadOnly] public BufferFromEntity<Child> ChildrenFromEntity;
 
@@ -35,9 +35,9 @@ namespace DotsUI.Input
 
         private void GoDownHierarchyTree(Entity entity, int index)
         {
-            if (PointerInputReceiver.Exists(entity) && LocalToWorldFromEntity.Exists(entity))
+            if (PointerInputReceiver.Exists(entity) && WorldSpaceRectFromEntity.Exists(entity))
             {
-                var localToWorld = LocalToWorldFromEntity[entity];
+                var localToWorld = WorldSpaceRectFromEntity[entity];
 
                 for (int i = 0; i < PointersPosition.Length; i++)
                 {
