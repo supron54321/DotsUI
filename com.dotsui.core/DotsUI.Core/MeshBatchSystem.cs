@@ -31,8 +31,8 @@ namespace DotsUI.Core
             [ReadOnly] public NativeHashMap<Entity, MaterialInfo> EntityToMaterial;
 
 
-            [ReadOnly] public BufferFromEntity<ControlVertexData> VerticesFromEntity;
-            [ReadOnly] public BufferFromEntity<ControlVertexIndex> TrianglesFromEntity;
+            [ReadOnly] public BufferFromEntity<ElementVertexData> VerticesFromEntity;
+            [ReadOnly] public BufferFromEntity<ElementVertexIndex> TrianglesFromEntity;
 
             [NativeDisableContainerSafetyRestriction]
             [WriteOnly] public ArchetypeChunkBufferType<MeshVertex> VertexType;
@@ -175,8 +175,8 @@ namespace DotsUI.Core
             inputDeps = UpdateBatchIndices(inputDeps);
 
             var childFromEntity = GetBufferFromEntity<Child>(true);
-            var verticesFromEntity = GetBufferFromEntity<ControlVertexData>(true);
-            var trianglesFromEntity = GetBufferFromEntity<ControlVertexIndex>(true);
+            var verticesFromEntity = GetBufferFromEntity<ElementVertexData>(true);
+            var trianglesFromEntity = GetBufferFromEntity<ElementVertexIndex>(true);
 
             using (new ProfilerSample("RenderSystem.BuildingChunks"))
             {

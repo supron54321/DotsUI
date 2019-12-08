@@ -18,12 +18,13 @@ namespace DotsUI.Core
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<SpriteImage>(),
-                    ComponentType.ReadWrite<ControlVertexData>(),
-                    ComponentType.ReadWrite<ControlVertexIndex>(),
+                    ComponentType.ReadWrite<ElementVertexData>(),
+                    ComponentType.ReadWrite<ElementVertexIndex>(),
                     ComponentType.ReadOnly<RebuildElementMeshFlag>(), 
+                    ComponentType.ReadOnly<WorldSpaceRect>(), 
                 }
             });
-            m_SpriteGroup.SetChangedVersionFilter(typeof(RebuildElementMeshFlag));
+            m_SpriteGroup.SetChangedVersionFilter(typeof(WorldSpaceRect));
         }
 
         [BurstCompile]
@@ -31,8 +32,8 @@ namespace DotsUI.Core
         {
             //[ReadOnly] public NativeHashMap<int, SpriteVertexData> SpriteData;
             [ReadOnly] public ComponentDataFromEntity<SpriteVertexData> SpriteDataFromEntity;
-            public ArchetypeChunkBufferType<ControlVertexData> VertexDataType;
-            public ArchetypeChunkBufferType<ControlVertexIndex> VertexIndexType;
+            public ArchetypeChunkBufferType<ElementVertexData> VertexDataType;
+            public ArchetypeChunkBufferType<ElementVertexIndex> VertexIndexType;
             [ReadOnly] public ArchetypeChunkComponentType<SpriteImage> SpriteImageType;
             [ReadOnly] public ArchetypeChunkComponentType<WorldSpaceRect> WorldSpaceRectType;
             [ReadOnly] public ArchetypeChunkComponentType<WorldSpaceMask> WorldSpaceMaskType;
@@ -48,8 +49,8 @@ namespace DotsUI.Core
                 NativeArray<VertexColorValue> colorValues = chunk.GetNativeArray(ColorValueType);
                 NativeArray<VertexColorMultiplier> colorMultipliers = chunk.GetNativeArray(ColorMultiplierType);
                 NativeArray<RebuildElementMeshFlag> rebuildFlagArray = chunk.GetNativeArray(RebuildElementMeshFlagType);
-                BufferAccessor<ControlVertexData> vertexDataAccessor = chunk.GetBufferAccessor(VertexDataType);
-                BufferAccessor<ControlVertexIndex> vertexIndexAccessor = chunk.GetBufferAccessor(VertexIndexType);
+                BufferAccessor<ElementVertexData> vertexDataAccessor = chunk.GetBufferAccessor(VertexDataType);
+                BufferAccessor<ElementVertexIndex> vertexIndexAccessor = chunk.GetBufferAccessor(VertexIndexType);
 
                 for(int i = 0; i < chunk.Count; i++)
                 {
@@ -88,8 +89,8 @@ namespace DotsUI.Core
                 ColorMultiplierType = GetArchetypeChunkComponentType<VertexColorMultiplier>(true),
                 SpriteDataFromEntity = GetComponentDataFromEntity<SpriteVertexData>(),
                 SpriteImageType = GetArchetypeChunkComponentType<SpriteImage>(true),
-                VertexDataType = GetArchetypeChunkBufferType<ControlVertexData>(),
-                VertexIndexType = GetArchetypeChunkBufferType<ControlVertexIndex>(),
+                VertexDataType = GetArchetypeChunkBufferType<ElementVertexData>(),
+                VertexIndexType = GetArchetypeChunkBufferType<ElementVertexIndex>(),
                 WorldSpaceRectType = GetArchetypeChunkComponentType<WorldSpaceRect>(true),
                 WorldSpaceMaskType = GetArchetypeChunkComponentType<WorldSpaceMask>(true),
                 RebuildElementMeshFlagType = GetArchetypeChunkComponentType<RebuildElementMeshFlag>()

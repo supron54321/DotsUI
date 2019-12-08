@@ -60,7 +60,7 @@ public class DotsUIInspector : EditorWindow
             All = new ComponentType[]
             {
                 ComponentType.ReadOnly<DotsUI.Core.RectTransform>(),
-                ComponentType.ReadOnly<CanvasScreenSize>(),
+                ComponentType.ReadOnly<CanvasSize>(),
                 ComponentType.ReadOnly<Child>(),
                 typeof(WorldSpaceRect),
             },

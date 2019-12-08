@@ -20,8 +20,8 @@ namespace DotsUI.Controls
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<InputFieldCaret>(),
-                    ComponentType.ReadWrite<ControlVertexData>(),
-                    ComponentType.ReadWrite<ControlVertexIndex>(),
+                    ComponentType.ReadWrite<ElementVertexData>(),
+                    ComponentType.ReadWrite<ElementVertexIndex>(),
                 }
             });
         }
@@ -45,8 +45,8 @@ namespace DotsUI.Controls
                         var inputField = EntityManager.GetComponentData<InputField>(inputFieldEntity);
                         var caretState = EntityManager.GetComponentData<InputFieldCaretState>(inputFieldEntity);
 
-                        var controlVertexData = EntityManager.GetBuffer<ControlVertexData>(entity);
-                        var controlVertexIndex = EntityManager.GetBuffer<ControlVertexIndex>(entity);
+                        var controlVertexData = EntityManager.GetBuffer<ElementVertexData>(entity);
+                        var controlVertexIndex = EntityManager.GetBuffer<ElementVertexIndex>(entity);
 
                         var rect = TextUtils.GetCaretRect(inputField.Target, EntityManager, caretState.CaretPosition);
 
@@ -56,28 +56,28 @@ namespace DotsUI.Controls
                             ? new float4(0.0f, 0.0f, 0.0f, 1.0f)
                             : new float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-                        controlVertexData.Add(new ControlVertexData()
+                        controlVertexData.Add(new ElementVertexData()
                         {
                             Color = color,
                             Normal = new float3(0.0f, 0.0f, -1.0f),
                             Position = new float3(rect.Min, 0.0f),
                             TexCoord0 = new float2(0.0f)
                         });
-                        controlVertexData.Add(new ControlVertexData()
+                        controlVertexData.Add(new ElementVertexData()
                         {
                             Color = color,
                             Normal = new float3(0.0f, 0.0f, -1.0f),
                             Position = new float3(rect.Max.x, rect.Min.y, 0.0f),
                             TexCoord0 = new float2(0.0f)
                         });
-                        controlVertexData.Add(new ControlVertexData()
+                        controlVertexData.Add(new ElementVertexData()
                         {
                             Color = color,
                             Normal = new float3(0.0f, 0.0f, -1.0f),
                             Position = new float3(rect.Max.x, rect.Max.y, 0.0f),
                             TexCoord0 = new float2(0.0f)
                         });
-                        controlVertexData.Add(new ControlVertexData()
+                        controlVertexData.Add(new ElementVertexData()
                         {
                             Color = color,
                             Normal = new float3(0.0f, 0.0f, -1.0f),

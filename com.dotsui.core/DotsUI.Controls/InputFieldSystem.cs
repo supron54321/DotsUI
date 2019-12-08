@@ -29,7 +29,7 @@ namespace DotsUI.Controls
         protected override void OnCreate()
         {
             m_CaretArchetype = EntityManager.CreateArchetype(typeof(RectTransform), typeof(Parent), typeof(WorldSpaceRect), typeof(SpriteImage), 
-                typeof(ControlVertexData), typeof(ControlVertexIndex), typeof(VertexColorValue), typeof(VertexColorMultiplier),
+                typeof(ElementVertexData), typeof(ElementVertexIndex), typeof(VertexColorValue), typeof(VertexColorMultiplier),
                 typeof(InputFieldCaret));
 
             m_InputSystemBarrier = World.GetOrCreateSystem<InputHandleBarrier>();

@@ -29,9 +29,9 @@ namespace DotsUI.Core
             [ReadOnly] public BufferFromEntity<FontGlyphData> FontGlyphDataFromEntity;
 
             [NativeDisableContainerSafetyRestriction]
-            public ArchetypeChunkBufferType<ControlVertexData> VertexDataType;
+            public ArchetypeChunkBufferType<ElementVertexData> VertexDataType;
             [NativeDisableContainerSafetyRestriction]
-            public ArchetypeChunkBufferType<ControlVertexIndex> IndexDataType;
+            public ArchetypeChunkBufferType<ElementVertexIndex> IndexDataType;
 
             [ReadOnly]
             public ArchetypeChunkBufferType<TextData> TextBufferType;
@@ -73,7 +73,7 @@ namespace DotsUI.Core
             }
 
 
-            private void PopulateMesh(WorldSpaceRect rect, ElementScale scale, WorldSpaceMask mask, TextRenderer settings, float4 color, ref DynamicBuffer<TextData> textBuffer, ref DynamicBuffer<ControlVertexData> vertices, ref DynamicBuffer<ControlVertexIndex> triangles)
+            private void PopulateMesh(WorldSpaceRect rect, ElementScale scale, WorldSpaceMask mask, TextRenderer settings, float4 color, ref DynamicBuffer<TextData> textBuffer, ref DynamicBuffer<ElementVertexData> vertices, ref DynamicBuffer<ElementVertexIndex> triangles)
             {
                 _VerticalAlignmentOptions verticalAlignment = (_VerticalAlignmentOptions)settings.Alignment;
                 _HorizontalAlignmentOptions horizontalAlignment = (_HorizontalAlignmentOptions)settings.Alignment;
@@ -129,15 +129,15 @@ namespace DotsUI.Core
                             uv.xy = uv.xy + cut.UvMin;
                             uv.zw = uv.zw - cut.UvMax;
 
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 2 });
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 1 });
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex + 2 });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex + 1 });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex });
 
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 3 });
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 2 });
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex + 3 });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex + 2 });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex });
 
-                            vertices.Add(new ControlVertexData()
+                            vertices.Add(new ElementVertexData()
                             {
                                 Position = new float3(vertexPos.xy, 0.0f),
                                 Normal = new float3(0.0f, 0.0f, -1.0f),
@@ -145,7 +145,7 @@ namespace DotsUI.Core
                                 TexCoord1 = uv2,
                                 Color = color
                             });
-                            vertices.Add(new ControlVertexData()
+                            vertices.Add(new ElementVertexData()
                             {
                                 Position = new float3(vertexPos.zy, 0.0f),
                                 Normal = new float3(0.0f, 0.0f, -1.0f),
@@ -153,7 +153,7 @@ namespace DotsUI.Core
                                 TexCoord1 = uv2,
                                 Color = color
                             });
-                            vertices.Add(new ControlVertexData()
+                            vertices.Add(new ElementVertexData()
                             {
                                 Position = new float3(vertexPos.zw, 0.0f),
                                 Normal = new float3(0.0f, 0.0f, -1.0f),
@@ -161,7 +161,7 @@ namespace DotsUI.Core
                                 TexCoord1 = uv2,
                                 Color = color
                             });
-                            vertices.Add(new ControlVertexData()
+                            vertices.Add(new ElementVertexData()
                             {
                                 Position = new float3(vertexPos.xw, 0.0f),
                                 Normal = new float3(0.0f, 0.0f, -1.0f),
@@ -192,8 +192,8 @@ namespace DotsUI.Core
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<WorldSpaceRect>(),
-                    ComponentType.ReadWrite<ControlVertexData>(),
-                    ComponentType.ReadWrite<ControlVertexIndex>(),
+                    ComponentType.ReadWrite<ElementVertexData>(),
+                    ComponentType.ReadWrite<ElementVertexIndex>(),
                     ComponentType.ReadOnly<TextRenderer>(),
                     ComponentType.ReadOnly<TextData>(),
                     ComponentType.ReadOnly<RebuildElementMeshFlag>(),
@@ -212,8 +212,8 @@ namespace DotsUI.Core
                 ColorValueType = GetArchetypeChunkComponentType<VertexColorValue>(true),
                 ColorMultiplierType = GetArchetypeChunkComponentType<VertexColorMultiplier>(true),
                 TextRendererType = GetArchetypeChunkComponentType<TextRenderer>(true),
-                VertexDataType = GetArchetypeChunkBufferType<ControlVertexData>(),
-                IndexDataType = GetArchetypeChunkBufferType<ControlVertexIndex>(),
+                VertexDataType = GetArchetypeChunkBufferType<ElementVertexData>(),
+                IndexDataType = GetArchetypeChunkBufferType<ElementVertexIndex>(),
                 RebuildElementMeshFlagArray = GetArchetypeChunkComponentType<RebuildElementMeshFlag>(),
                 FontAssetFromEntity = GetComponentDataFromEntity<TextFontAsset>(true),
                 FontGlyphDataFromEntity = GetBufferFromEntity<FontGlyphData>(true),

@@ -72,7 +72,7 @@ namespace DotsUI.Hybrid
         private void SetUpScreenSpaceOverlay(Canvas canvas, Entity entity)
         {
             DstEntityManager.AddComponentData(entity, new CanvasScreenSpaceOverlay());
-            DstEntityManager.AddComponentData(entity, new CanvasScreenSize
+            DstEntityManager.AddComponentData(entity, new CanvasSize
             {
                 Value = new int2(Screen.width, Screen.height)
             });
@@ -90,7 +90,7 @@ namespace DotsUI.Hybrid
             {
                 Target = proxy
             });
-            DstEntityManager.AddComponentData(entity, new CanvasScreenSize
+            DstEntityManager.AddComponentData(entity, new CanvasSize
             {
                 Value = new int2(canvas.worldCamera.pixelWidth, canvas.worldCamera.pixelHeight)
             });

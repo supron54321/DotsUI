@@ -51,8 +51,8 @@ namespace DotsUI.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void PopulateSpriteVertices(ref WorldSpaceMask rectMask, ref DynamicBuffer<ControlVertexData> vertices,
-            ref DynamicBuffer<ControlVertexIndex> triangles, ref WorldSpaceRect rectData,
+        public static unsafe void PopulateSpriteVertices(ref WorldSpaceMask rectMask, ref DynamicBuffer<ElementVertexData> vertices,
+            ref DynamicBuffer<ElementVertexIndex> triangles, ref WorldSpaceRect rectData,
             ref SpriteVertexData spriteVertexData, float4 color)
         {
             float pixelsPerUnit = spriteVertexData.PixelsPerUnit / 100.0f;
@@ -97,7 +97,7 @@ namespace DotsUI.Core
             {
                 for (int y = 0; y < 4; ++y)
                 {
-                    vertices.Add(new ControlVertexData()
+                    vertices.Add(new ElementVertexData()
                     {
                         Position = new float3(vertScratch[x].x, vertScratch[y].y, 0.0f),
                         TexCoord0 = new float2(uvScratch[x].x, uvScratch[y].y),

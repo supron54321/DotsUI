@@ -39,8 +39,8 @@ namespace DotsUI.Hybrid
                 fixed (char* textPtr = content)
                     UnsafeUtility.MemCpy(textBuffer.GetUnsafePtr(), textPtr, content.Length * sizeof(char));
             }
-            DstEntityManager.AddBuffer<ControlVertexData>(entity);
-            DstEntityManager.AddBuffer<ControlVertexIndex>(entity);
+            DstEntityManager.AddBuffer<ElementVertexData>(entity);
+            DstEntityManager.AddBuffer<ElementVertexIndex>(entity);
             DstEntityManager.AddComponentData(entity, new RebuildElementMeshFlag() { Rebuild = true });
             ConvertGraphic(text);
         }
