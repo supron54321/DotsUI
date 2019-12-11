@@ -20,8 +20,8 @@ namespace DotsUI.Core
                     ComponentType.ReadOnly<SpriteImage>(),
                     ComponentType.ReadWrite<ElementVertexData>(),
                     ComponentType.ReadWrite<ElementVertexIndex>(),
-                    ComponentType.ReadOnly<RebuildElementMeshFlag>(), 
-                    ComponentType.ReadOnly<WorldSpaceRect>(), 
+                    ComponentType.ReadOnly<RebuildElementMeshFlag>(),
+                    ComponentType.ReadOnly<WorldSpaceRect>(),
                 }
             });
             m_SpriteGroup.SetChangedVersionFilter(typeof(WorldSpaceRect));
@@ -52,7 +52,7 @@ namespace DotsUI.Core
                 BufferAccessor<ElementVertexData> vertexDataAccessor = chunk.GetBufferAccessor(VertexDataType);
                 BufferAccessor<ElementVertexIndex> vertexIndexAccessor = chunk.GetBufferAccessor(VertexIndexType);
 
-                for(int i = 0; i < chunk.Count; i++)
+                for (int i = 0; i < chunk.Count; i++)
                 {
                     if (rebuildFlagArray[i].Rebuild)
                     {
@@ -69,20 +69,22 @@ namespace DotsUI.Core
                         {
                             var spriteData = SpriteDataFromEntity[assetEntity];
                             // TODO: Simple sprite (non sliced)
-                            SpriteUtility.PopulateSpriteVertices(ref worldSpaceMask, ref vertices, ref triangles, ref worldSpaceRect, ref spriteData, colorValues[i].Value*colorMultipliers[i].Value);
+                            SpriteUtility.PopulateSpriteVertices(ref worldSpaceMask, ref vertices, ref triangles, ref worldSpaceRect, ref spriteData, colorValues[i].Value * colorMultipliers[i].Value);
                         }
                         else
                         {
                             var spriteData = SpriteVertexData.Default;
                             SpriteUtility.PopulateSpriteVertices(ref worldSpaceMask, ref vertices, ref triangles, ref worldSpaceRect, ref spriteData, colorValues[i].Value * colorMultipliers[i].Value);
                         }
-                        rebuildFlagArray[i] = new RebuildElementMeshFlag(){Rebuild = false};
+                        rebuildFlagArray[i] = new RebuildElementMeshFlag() { Rebuild = false };
                     }
                 }
             }
         }
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
+            if (m_SpriteGroup.CalculateEntityCount() < 0)
+                return inputDeps;
             SpriteBatchJob batchJob = new SpriteBatchJob()
             {
                 ColorValueType = GetArchetypeChunkComponentType<VertexColorValue>(true),

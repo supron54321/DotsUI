@@ -205,6 +205,8 @@ namespace DotsUI.Core
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
+            if (m_TextGroup.CalculateEntityCount() <= 0)
+                return inputDeps;
             TextChunkBuilder chunkJob = new TextChunkBuilder()
             {
                 TextBufferType = GetArchetypeChunkBufferType<TextData>(true),

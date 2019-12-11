@@ -24,7 +24,8 @@ namespace DotsUI.Input
 
         public void Execute(int index)
         {
-            GoDownHierarchyTree(Roots[index], index);
+            var pointerData = PointersPosition[0];
+            GoDownHierarchyTree(Roots[index], index, pointerData.Position);
         }
 
         private bool IsInRect(ref WorldSpaceRect rect, float2 position)
@@ -33,27 +34,30 @@ namespace DotsUI.Input
                     position.y >= rect.Min.y && position.y <= rect.Max.y);
         }
 
-        private void GoDownHierarchyTree(Entity entity, int index)
+        private bool GoDownHierarchyTree(Entity entity, int index, float2 position)
         {
+            if (ChildrenFromEntity.Exists(entity))
+            {
+                var children = ChildrenFromEntity[entity];
+                for (int i = children.Length-1; i >= 0; i--)
+                {
+                    if (GoDownHierarchyTree(children[i].Value, index, position))
+                        return true;
+                }
+            }
+
             if (PointerInputReceiver.Exists(entity) && WorldSpaceRectFromEntity.Exists(entity))
             {
                 var localToWorld = WorldSpaceRectFromEntity[entity];
 
-                for (int i = 0; i < PointersPosition.Length; i++)
+                if (IsInRect(ref localToWorld, position))
                 {
-                    if (IsInRect(ref localToWorld, PointersPosition[i].Position))
-                        Hits[index * PointersPosition.Length + i] = entity;
+                    Hits[index * PointersPosition.Length] = entity;
+                    return true;
                 }
             }
 
-            if (ChildrenFromEntity.Exists(entity))
-            {
-                var children = ChildrenFromEntity[entity];
-                for (int i = 0; i < children.Length; i++)
-                {
-                    GoDownHierarchyTree(children[i].Value, index);
-                }
-            }
+            return false;
         }
     }
 }

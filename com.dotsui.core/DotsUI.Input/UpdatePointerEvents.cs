@@ -26,7 +26,7 @@ namespace DotsUI.Input
     {
         [ReadOnly] public Entity StateEntity;
         [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<Entity> Hits;
-        [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<MouseInputFrameData> PointerFrameData;
+        [ReadOnly] public NativeArray<MouseInputFrameData> PointerFrameData;
 
         [ReadOnly]
         public NativeArray<NativePointerButtonEvent> PointerEvents;

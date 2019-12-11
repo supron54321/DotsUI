@@ -95,6 +95,8 @@ namespace DotsUI.Input
         private NativeList<NativePointerButtonEvent> m_NativePointerEvents;
         private NativeList<NativeKeyboardInputEvent> m_NativeKeyboardEvents;
 
+        private NativeList<MouseInputFrameData> m_PointerFrameData;
+
         protected override void OnCreate()
         {
             m_NativePointerEvents = new NativeList<NativePointerButtonEvent>(14, Allocator.Persistent);
@@ -105,6 +107,8 @@ namespace DotsUI.Input
 
             m_KeyboardTargetToEvent = new NativeMultiHashMap<Entity, KeyboardInputBuffer>(16, Allocator.Persistent);
             m_KeyboardEventList = new NativeList<Entity>(16, Allocator.Persistent);
+
+            m_PointerFrameData = new NativeList<MouseInputFrameData>(8, Allocator.Persistent);
 
             m_ButtonStates = new NativeArray<MouseButtonState>(3, Allocator.Persistent);
 
@@ -139,12 +143,14 @@ namespace DotsUI.Input
             m_KeyboardTargetToEvent.Dispose();
             m_KeyboardEventList.Dispose();
 
+            m_PointerFrameData.Dispose();
+
             m_ButtonStates.Dispose();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var pointerFrameData = GatherPointerFrameData(Allocator.TempJob);
+            var pointerFrameData = GatherPointerFrameData(m_PointerFrameData);
             NativeArray<Entity> roots = m_RootGroup.ToEntityArray(Allocator.TempJob, out var rootsDeps);
             inputDeps = JobHandle.CombineDependencies(inputDeps, rootsDeps);
             var childrenFromEntity = GetBufferFromEntity<Child>(true);
@@ -246,12 +252,14 @@ namespace DotsUI.Input
         /// </summary>
         /// <param name="allocator"></param>
         /// <returns></returns>
-        private NativeArray<MouseInputFrameData> GatherPointerFrameData(Allocator allocator)
+        private NativeArray<MouseInputFrameData> GatherPointerFrameData(NativeList<MouseInputFrameData> frameData)
         {
             using (new ProfilerSample("GatherPointerFrameData"))
             {
-                NativeArray<MouseInputFrameData> ret =
-                    new NativeArray<MouseInputFrameData>(1 + UnityEngine.Input.touchCount, allocator);
+                var sampl = new ProfilerSample("Reloc");
+                frameData.ResizeUninitialized(1 + UnityEngine.Input.touchCount);
+                var ret = frameData.AsArray();
+                sampl.Dispose();
                 float2 mousePos = ((float3)UnityEngine.Input.mousePosition).xy;
                 ret[0] = new MouseInputFrameData()
                 {
