@@ -51,6 +51,9 @@ namespace DotsUI.Controls
                 EventReader.GetFirstEvent(scrollBarEntity, out var pointerEvent, out var it);
                 do
                 {
+                    if(pointerEvent.EventType != PointerEventType.Drag)
+                        continue;
+                    
                     var scrollRect = ScrollRectFromEntity[scrollBar.ParentScrollRect];
                     float value = scrollBar.Value;
                     if (scrollRect.HorizontalBar == scrollBarEntity)

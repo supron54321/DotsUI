@@ -276,6 +276,7 @@ namespace DotsUI.Input
                     };
                 }
 
+                m_LastFrameMousePos = mousePos;
                 return ret;
             }
         }
