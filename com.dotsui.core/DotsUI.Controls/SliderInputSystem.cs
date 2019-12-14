@@ -34,8 +34,8 @@ namespace DotsUI.Controls
         struct SliderInputJob : IJob
         {
             public ComponentDataFromEntity<Slider> SliderComponentFromEntity;
-            public AddFlagComponentCommandBuffer.ParallelWriter AddFlagCommandBuff;
-            public AddFlagComponentCommandBuffer.ParallelWriter AddOnChangeFlagCommandBuff;
+            public FlagComponentCommandBuffer.ParallelWriter AddFlagCommandBuff;
+            public FlagComponentCommandBuffer.ParallelWriter AddOnChangeFlagCommandBuff;
             [ReadOnly] public ComponentDataFromEntity<WorldSpaceRect> WorldSpaceRectFromEntity;
             [ReadOnly] public InputEventReader<PointerInputBuffer> EventReader;
             [ReadOnly] public ComponentDataFromEntity<Parent> ParentFromEntity;
@@ -110,8 +110,8 @@ namespace DotsUI.Controls
                 SliderInputJob sliderJob = new SliderInputJob()
                 {
                     SliderComponentFromEntity = GetComponentDataFromEntity<Slider>(),
-                    AddFlagCommandBuff = m_Barrier.CreateAddFlagComponentCommandBuffer<DirtyElementFlag>().AsParallelWriter(),
-                    AddOnChangeFlagCommandBuff = m_Barrier.CreateAddFlagComponentCommandBuffer<SliderValueChangedEvent>().AsParallelWriter(),
+                    AddFlagCommandBuff = m_Barrier.CreateFlagComponentCommandBuffer<DirtyElementFlag>().AsParallelWriter(),
+                    AddOnChangeFlagCommandBuff = m_Barrier.CreateFlagComponentCommandBuffer<SliderValueChangedEvent>().AsParallelWriter(),
                     WorldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>(true),
                     EventReader = eventReader,
                     ParentFromEntity = GetComponentDataFromEntity<Parent>(true)

@@ -1,5 +1,6 @@
 ﻿using DotsUI.Core;
 using TMPro;
+using Unity.Burst;
 using Unity.Entities;
 using UnityEngine;
 
@@ -11,7 +12,7 @@ namespace DotsUI.Hybrid
 		protected override void OnUpdate()
 		{
 			Entities.ForEach<TMP_FontAsset>(this.ConvertTMPFontAsset);
-		}
+        }
 
 		private void ConvertTMPFontAsset(TMP_FontAsset tmpFontAsset)
 		{

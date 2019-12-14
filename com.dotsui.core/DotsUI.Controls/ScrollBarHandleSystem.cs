@@ -35,7 +35,7 @@ namespace DotsUI.Controls
             public ComponentDataFromEntity<ScrollBar> ScrollBarFromEntity;
             [ReadOnly] public InputEventReader<PointerInputBuffer> EventReader;
             [ReadOnly] public ComponentDataFromEntity<ScrollRect> ScrollRectFromEntity;
-            public AddFlagComponentCommandBuffer.ParallelWriter AddFlagCommandBuff;
+            public FlagComponentCommandBuffer.ParallelWriter AddFlagCommandBuff;
 
             public void Execute()
             {
@@ -87,7 +87,7 @@ namespace DotsUI.Controls
                 ScrollBarFromEntity = GetComponentDataFromEntity<ScrollBar>(),
                 EventReader = eventReader,
                 ScrollRectFromEntity = GetComponentDataFromEntity<ScrollRect>(true),
-                AddFlagCommandBuff = m_Barrier.CreateAddFlagComponentCommandBuffer<DirtyElementFlag>().AsParallelWriter()
+                AddFlagCommandBuff = m_Barrier.CreateFlagComponentCommandBuffer<DirtyElementFlag>().AsParallelWriter()
             };
             inputDeps = scrollBarJob.Schedule(inputDeps);
             m_Barrier.AddJobHandleForProducer(inputDeps);

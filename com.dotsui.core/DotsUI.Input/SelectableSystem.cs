@@ -46,7 +46,7 @@ namespace DotsUI.Input
 
             // This is probably not the best idea to disable this restriction, since different selecatables can point to the same target
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<VertexColorMultiplier> ColorMultiplierFromEntity;
-            public AddFlagComponentCommandBuffer.ParallelWriter ToUpdate;
+            public FlagComponentCommandBuffer.ParallelWriter ToUpdate;
             public InputEventReader<PointerInputBuffer> EventReader;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
@@ -139,7 +139,7 @@ namespace DotsUI.Input
                     SelectableType = GetComponentDataFromEntity<Selectable>(),
                     ColorMultiplierFromEntity = GetComponentDataFromEntity<VertexColorMultiplier>(),
                     EventReader = eventReader,
-                    ToUpdate = m_Barrier.CreateAddFlagComponentCommandBuffer<UpdateElementColor>().AsParallelWriter()
+                    ToUpdate = m_Barrier.CreateFlagComponentCommandBuffer<UpdateElementColor>().AsParallelWriter()
                 };
                 inputDeps = setJob.Schedule(m_SelectableGroup, inputDeps);
                 m_Barrier.AddJobHandleForProducer(inputDeps);

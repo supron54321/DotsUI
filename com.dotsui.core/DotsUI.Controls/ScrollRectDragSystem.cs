@@ -29,7 +29,7 @@ namespace DotsUI.Controls
         {
             [ReadOnly] public ComponentDataFromEntity<ScrollRect> ScrollRectFromEntity;
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<ScrollBar> ScrollBarFormEntity;
-            public AddFlagComponentCommandBuffer.ParallelWriter AddFlagCommandBuff;
+            public FlagComponentCommandBuffer.ParallelWriter AddFlagCommandBuff;
             [ReadOnly]
             public InputEventReader<PointerInputBuffer> EventReader;
 
@@ -76,7 +76,7 @@ namespace DotsUI.Controls
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var commandBuff = m_Barrier.CreateAddFlagComponentCommandBuffer<DirtyElementFlag>();
+            var commandBuff = m_Barrier.CreateFlagComponentCommandBuffer<DirtyElementFlag>();
             var eventReader = m_ScrollEventQuery.CreatePointerEventReader(Allocator.TempJob);
             if (eventReader.EntityCount > 0)
             {

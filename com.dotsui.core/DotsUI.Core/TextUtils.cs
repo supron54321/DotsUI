@@ -13,16 +13,7 @@ namespace DotsUI.Core
             public float LineWidth;
         }
 
-        public static Entity CreateFontAssetFromTmp(EntityManager mgr, TMP_FontAsset font)
-        {
-	        var entity = mgr.CreateEntity(typeof(TextFontAsset), typeof(LegacyTextFontAsset), typeof(FontGlyphData));
-
-			SetupFontAssetFromTmp(mgr, entity, font);
-
-			return entity;
-        }
-
-		public static void SetupFontAssetFromTmp(EntityManager mgr, Entity entity, TMP_FontAsset font)
+        public static void SetupFontAssetFromTmp(EntityManager mgr, Entity entity, TMP_FontAsset font)
 		{ 
 			mgr.SetSharedComponentData(entity, new LegacyTextFontAsset
             {
@@ -49,16 +40,16 @@ namespace DotsUI.Core
 
             var buffer = mgr.GetBuffer<FontGlyphData>(entity);
             buffer.Reserve(font.glyphLookupTable.Count);
-            foreach (var glyph in font.characterLookupTable)
-            {
-                buffer.Add(new FontGlyphData()
-                {
-                    Character = (ushort)glyph.Key,
-                    Scale = glyph.Value.scale,
-                    Rect = glyph.Value.glyph.glyphRect,
-                    Metrics = glyph.Value.glyph.metrics
-                });
-            }
+            //foreach (var glyph in font.characterLookupTable)
+            //{
+            //    buffer.Add(new FontGlyphData()
+            //    {
+            //        Character = (ushort)glyph.Key,
+            //        Scale = glyph.Value.scale,
+            //        Rect = glyph.Value.glyph.glyphRect,
+            //        Metrics = glyph.Value.glyph.metrics
+            //    });
+            //}
         }
 
         public static bool GetGlyph(ushort character, ref DynamicBuffer<FontGlyphData> glyphData, out FontGlyphData glyph)

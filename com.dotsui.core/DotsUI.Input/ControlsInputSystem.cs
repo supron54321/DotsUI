@@ -119,6 +119,7 @@ namespace DotsUI.Input
                     ComponentType.ReadOnly<RectTransform>(),
                     ComponentType.ReadOnly<Child>(),
                     ComponentType.ReadOnly<WorldSpaceRect>(),
+                    ComponentType.ReadOnly<CanvasSortLayer>(), 
                 },
                 None = new ComponentType[]
                 {
