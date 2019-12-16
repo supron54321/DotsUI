@@ -31,8 +31,8 @@ namespace DotsUI.Core
             [ReadOnly] public NativeHashMap<Entity, MaterialInfo> EntityToMaterial;
 
 
-            [ReadOnly] public BufferFromEntity<ControlVertexData> VerticesFromEntity;
-            [ReadOnly] public BufferFromEntity<ControlVertexIndex> TrianglesFromEntity;
+            [ReadOnly] public BufferFromEntity<ElementVertexData> VerticesFromEntity;
+            [ReadOnly] public BufferFromEntity<ElementVertexIndex> TrianglesFromEntity;
 
             [NativeDisableContainerSafetyRestriction]
             [WriteOnly] public ArchetypeChunkBufferType<MeshVertex> VertexType;
@@ -89,35 +89,36 @@ namespace DotsUI.Core
                     material.Id = -1;
                 }
 
-                if (m_CurrentMaterialId != material.Id)
+                int offset = triangles.Length;
+                int startIndex = vertices.Length;
+                if(VertexPointerFromEntity.Exists(entity))
+                    VertexPointerFromEntity[entity] = new ElementVertexPointerInMesh(){VertexPointer = startIndex};
+                var writtenIndices = Populate(entity, ref vertices, ref triangles, startIndex);
+
+                if (m_CurrentMaterialId != material.Id && writtenIndices > 0)
                 {
                     subMeshes.Add(new SubMeshInfo()
                     {
-                        Offset = triangles.Length,
+                        Offset = offset,
                         MaterialId = material.Id,
                         MaterialType = material.Type
                     });
                     m_CurrentMaterialId = material.Id;
                 }
-
-
-                int startIndex = vertices.Length;
-                if(VertexPointerFromEntity.Exists(entity))
-                    VertexPointerFromEntity[entity] = new ElementVertexPointerInMesh(){VertexPointer = startIndex};
-                Populate(entity, ref vertices, ref triangles, startIndex);
             }
 
-            private void Populate(Entity entity, ref DynamicBuffer<MeshVertex> vertices, ref DynamicBuffer<MeshVertexIndex> triangles, int startIndex)
+            private int Populate(Entity entity, ref DynamicBuffer<MeshVertex> vertices, ref DynamicBuffer<MeshVertexIndex> triangles, int startIndex)
             {
-                var textVertices = VerticesFromEntity[entity];
-                var textIndices = TrianglesFromEntity[entity];
+                var elementTriangles = VerticesFromEntity[entity];
+                var elementIndices = TrianglesFromEntity[entity];
 
-                for (int i = 0; i < textIndices.Length; i++)
+                for (int i = 0; i < elementIndices.Length; i++)
                     triangles.Add(new MeshVertexIndex()
                     {
-                        Value = textIndices[i].Value + startIndex
+                        Value = elementIndices[i].Value + startIndex
                     });
-                vertices.AddRange(textVertices.Reinterpret<MeshVertex>().AsNativeArray());
+                vertices.AddRange(elementTriangles.Reinterpret<MeshVertex>().AsNativeArray());
+                return elementIndices.Length;
             }
         }
 
@@ -175,8 +176,8 @@ namespace DotsUI.Core
             inputDeps = UpdateBatchIndices(inputDeps);
 
             var childFromEntity = GetBufferFromEntity<Child>(true);
-            var verticesFromEntity = GetBufferFromEntity<ControlVertexData>(true);
-            var trianglesFromEntity = GetBufferFromEntity<ControlVertexIndex>(true);
+            var verticesFromEntity = GetBufferFromEntity<ElementVertexData>(true);
+            var trianglesFromEntity = GetBufferFromEntity<ElementVertexIndex>(true);
 
             using (new ProfilerSample("RenderSystem.BuildingChunks"))
             {

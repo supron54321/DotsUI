@@ -17,7 +17,7 @@ namespace DotsUI.Controls
         protected override void OnCreate()
         {
             m_SliderQuery = GetEntityQuery(ComponentType.ReadOnly<Slider>(), ComponentType.ReadWrite<WorldSpaceRect>());
-            m_SliderQuery.SetFilterChanged(typeof(Slider));
+            m_SliderQuery.SetChangedVersionFilter(typeof(Slider));
             RequireForUpdate(m_SliderQuery);
         }
 

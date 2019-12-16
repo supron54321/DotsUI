@@ -17,7 +17,7 @@ namespace DotsUI.Hybrid
                 All = new[]
                 {
                     ComponentType.ReadOnly<CanvasTargetCamera>(),
-                    ComponentType.ReadWrite<CanvasScreenSize>(),
+                    ComponentType.ReadWrite<CanvasSize>(),
                 }
             });
         }
@@ -27,14 +27,14 @@ namespace DotsUI.Hybrid
             using (var chunkArray = m_UpdateSizeGroup.CreateArchetypeChunkArray(Allocator.TempJob))
             {
                 var cameraType = GetArchetypeChunkSharedComponentType<CanvasTargetCamera>();
-                var sizeType = GetArchetypeChunkComponentType<CanvasScreenSize>();
+                var sizeType = GetArchetypeChunkComponentType<CanvasSize>();
                 var entityType = GetArchetypeChunkEntityType();
                 NativeQueue<Entity> commandBuffer = new NativeQueue<Entity>(Allocator.Temp);
                 foreach (var chunk in chunkArray)
                 {
                     var camera = chunk.GetSharedComponentData(cameraType, EntityManager);
 
-                    var canvasSize = new CanvasScreenSize()
+                    var canvasSize = new CanvasSize()
                     {
                         Value = new int2(camera.Target.UnityCamera.pixelWidth, camera.Target.UnityCamera.pixelHeight)
                     };

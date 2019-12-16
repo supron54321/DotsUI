@@ -15,5 +15,9 @@ namespace DotsUI.Hybrid.Renderer
         }
 
 
+        public static ImguiProxy Create()
+        {
+            return new GameObject("DotsUI_Imgui-proxy").AddComponent<ImguiProxy>();
+        }
     }
 }

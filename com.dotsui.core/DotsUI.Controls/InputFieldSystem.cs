@@ -1,4 +1,5 @@
-﻿using DotsUI.Input;
+﻿using System.Diagnostics;
+using DotsUI.Input;
 using DotsUI.Core;
 using Unity.Burst;
 using Unity.Collections;
@@ -11,49 +12,28 @@ using KeyCode = UnityEngine.KeyCode;    // Avoid whole UnityEngine namespace
 namespace DotsUI.Controls
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
-    [UpdateAfter(typeof(ControlsInputSystem))]
+    [UpdateAfter(typeof(ControlsInputSystemGroup))]
     public class InputFieldSystem : JobComponentSystem
     {
-        private EntityQuery m_KeyboardEventGroup;
-        private EntityQuery m_PointerEventGroup;
         private EntityQuery m_InputFieldGroup;
         private EntityQuery m_InputOnFocusQuery;
         private EntityQuery m_InputOnLostFocusQuery;
 
+        private PointerEventQuery m_PointerEventQuery;
+        private KeyboardEventQuery m_KeyboardEventQuery;
+
         private EntityArchetype m_CaretArchetype;
         private Entity m_CaretEntity;
-
-        private NativeHashMap<Entity, Entity> m_TargetToKeyboardEvent;
-        private NativeHashMap<Entity, Entity> m_TargetToPointerEvent;
         private InputHandleBarrier m_InputSystemBarrier;
 
         protected override void OnCreate()
         {
             m_CaretArchetype = EntityManager.CreateArchetype(typeof(RectTransform), typeof(Parent), typeof(WorldSpaceRect), typeof(SpriteImage), 
-                typeof(ControlVertexData), typeof(ControlVertexIndex), typeof(VertexColorValue), typeof(VertexColorMultiplier),
+                typeof(ElementVertexData), typeof(ElementVertexIndex), typeof(VertexColorValue), typeof(VertexColorMultiplier),
                 typeof(InputFieldCaret));
-
-            m_TargetToKeyboardEvent = new NativeHashMap<Entity, Entity>(4, Allocator.Persistent);
-            m_TargetToPointerEvent = new NativeHashMap<Entity, Entity>(4, Allocator.Persistent);
 
             m_InputSystemBarrier = World.GetOrCreateSystem<InputHandleBarrier>();
 
-            m_KeyboardEventGroup = GetEntityQuery(new EntityQueryDesc()
-            {
-                All = new ComponentType[]
-                {
-                    ComponentType.ReadOnly<KeyboardEvent>(),
-                    ComponentType.ReadOnly<KeyboardInputBuffer>(),
-                }
-            });
-            m_PointerEventGroup = GetEntityQuery(new EntityQueryDesc()
-            {
-                All = new ComponentType[]
-                {
-                    ComponentType.ReadOnly<PointerEvent>(),
-                    ComponentType.ReadOnly<PointerInputBuffer>(),
-                }
-            });
             m_InputFieldGroup = GetEntityQuery(new EntityQueryDesc()
             {
                 All = new ComponentType[]
@@ -62,80 +42,57 @@ namespace DotsUI.Controls
                     ComponentType.ReadWrite<InputFieldCaretState>()
                 }
             });
-            base.OnCreateManager();
+            m_PointerEventQuery = PointerEventQuery.Create<InputField>(EntityManager);
+            m_KeyboardEventQuery = KeyboardEventQuery.Create<InputField>(EntityManager);
         }
-
-        protected override void OnDestroy()
+        
+        private struct EventProcessor : IJob
         {
-            m_TargetToKeyboardEvent.Dispose();
-            m_TargetToPointerEvent.Dispose();
-        }
-        private struct EventProcessor : IJobChunk
-        {
-            [ReadOnly] public BufferFromEntity<KeyboardInputBuffer> KeyboardInputBufferFromEntity;
-            [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerInputBufferFromEntity;
+            [ReadOnly] public InputEventReader<KeyboardInputBuffer> KeyboardEventReader;
+            [ReadOnly] public InputEventReader<PointerInputBuffer> PointerEventReader;
             [ReadOnly] public ComponentDataFromEntity<InputFieldCaretEntityLink> InputFieldCaretLinkFromEntity;
-            [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            public ArchetypeChunkComponentType<InputFieldCaretState> CaretStateType;
-            [ReadOnly] public ArchetypeChunkComponentType<InputField> InputFieldType;
-            [ReadOnly] public NativeHashMap<Entity, Entity> TargetToKeyboardEvent;
-            [ReadOnly] public NativeHashMap<Entity, Entity> TargetToPointerEvent;
+            [NativeDisableParallelForRestriction] public ComponentDataFromEntity<InputFieldCaretState> CaretStateFromEntity;
+            [ReadOnly] public ComponentDataFromEntity<InputField> InputFieldFromEntity;
             [WriteOnly] [NativeDisableParallelForRestriction] public BufferFromEntity<TextData> TextDataFromEntity;
             public EntityCommandBuffer.Concurrent CommandBuff;
 
             public EntityArchetype CaretArchetype;
 
-            public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
+            public void Execute()
             {
-                var entityArray = chunk.GetNativeArray(EntityType);
-                var caretStateAccessor = chunk.GetNativeArray(CaretStateType);
-                var inputFieldArray = chunk.GetNativeArray(InputFieldType);
-                for (int i = 0; i < chunk.Count; i++)
+                for (int i = 0; i < PointerEventReader.EntityCount; i++)
                 {
-                    var inputFieldEntity = entityArray[i];
-                    var thisInputField = inputFieldArray[i];
+                    var inputFieldEntity = PointerEventReader[i];
+                    var thisInputField = InputFieldFromEntity[inputFieldEntity];
 
-                    var isPointerInputPending = TargetToPointerEvent.TryGetValue(inputFieldEntity, out var pointerEventEntity);
-                    var isKeyboardInputPending =
-                        TargetToKeyboardEvent.TryGetValue(inputFieldEntity, out var eventEntity);
+                    var textData = TextDataFromEntity[thisInputField.Target];
+                    CaretStateFromEntity[inputFieldEntity] = ProcessPointerInput(inputFieldEntity, textData, CaretStateFromEntity[inputFieldEntity], 0);
+                }
+                for (int i = 0; i < KeyboardEventReader.EntityCount; i++)
+                {
+                    var inputFieldEntity = KeyboardEventReader[i];
+                    var thisInputField = InputFieldFromEntity[inputFieldEntity];
 
-                    if (isPointerInputPending || isKeyboardInputPending)
+                    var textData = TextDataFromEntity[thisInputField.Target];
+                    var oldTextLen = textData.Length;
+
+                    CommandBuff.AddComponent(0, thisInputField.Target, new DirtyElementFlag());
+                    CaretStateFromEntity[inputFieldEntity] = ProcessInput(inputFieldEntity, textData, CaretStateFromEntity[inputFieldEntity], 0);
+                    if (thisInputField.Placeholder != default)
                     {
-                        DynamicBuffer<PointerInputBuffer> pointerInputBuffer = default;
-                        if (isPointerInputPending)
-                            pointerInputBuffer = PointerInputBufferFromEntity[pointerEventEntity];
-
-                        var textData = TextDataFromEntity[thisInputField.Target];
-                        int oldTextLen = textData.Length;
-
-                        // Handle selection and click events
-                        if (isPointerInputPending)
-                        {
-                            caretStateAccessor[i] = ProcessPointerInput(inputFieldEntity, pointerInputBuffer, textData, caretStateAccessor[i], chunkIndex);
-                        }
-                        if (isKeyboardInputPending)
-                        {
-                            CommandBuff.AddComponent(chunkIndex, thisInputField.Target, new DirtyElementFlag());
-                            caretStateAccessor[i] = ProcessInput(inputFieldEntity, KeyboardInputBufferFromEntity[eventEntity], textData, caretStateAccessor[i], chunkIndex);
-                            if (thisInputField.Placeholder != default)
-                            {
-                                if (textData.Length > 0)
-                                    CommandBuff.AddComponent(chunkIndex, thisInputField.Placeholder, new Disabled());
-                                else if (oldTextLen > 0 && textData.Length == 0)
-                                    CommandBuff.RemoveComponent<Disabled>(chunkIndex, thisInputField.Placeholder);
-                            }
-                        }
-
+                        if (textData.Length > 0)
+                            CommandBuff.AddComponent(0, thisInputField.Placeholder, new Disabled());
+                        else if (oldTextLen > 0 && textData.Length == 0)
+                            CommandBuff.RemoveComponent<Disabled>(0, thisInputField.Placeholder);
                     }
-
                 }
             }
 
-            private InputFieldCaretState ProcessPointerInput(Entity inputFieldEntity, DynamicBuffer<PointerInputBuffer> pointerInputBuffer, DynamicBuffer<TextData> textData, InputFieldCaretState caretState, int chunkIdx)
+            private InputFieldCaretState ProcessPointerInput(Entity inputFieldEntity, DynamicBuffer<TextData> textData, InputFieldCaretState caretState, int chunkIdx)
             {
-                for (int i = 0; i < pointerInputBuffer.Length; i++)
+                PointerEventReader.GetFirstEvent(inputFieldEntity, out var pointerEvent, out var it);
+                do
                 {
-                    var pointerEvent = pointerInputBuffer[i];
                     if (pointerEvent.EventType == PointerEventType.Selected)
                     {
                         caretState.CaretPosition = textData.Length;
@@ -143,7 +100,6 @@ namespace DotsUI.Controls
                         {
                             CaretEntity = CreateCaret(inputFieldEntity, chunkIdx)
                         });
-                        //CommandBuff.RemoveComponent(chunkIdx, caretState.CaretEntity, typeof(Disabled));
                     }
 
                     if (pointerEvent.EventType == PointerEventType.Click)
@@ -155,12 +111,14 @@ namespace DotsUI.Controls
                         CommandBuff.AddComponent(chunkIdx, inputFieldEntity, new InputFieldEndEditEvent());
                         if (InputFieldCaretLinkFromEntity.Exists(inputFieldEntity))
                         {
-                            CommandBuff.DestroyEntity(chunkIdx, InputFieldCaretLinkFromEntity[inputFieldEntity].CaretEntity);
+                            CommandBuff.DestroyEntity(chunkIdx,
+                                InputFieldCaretLinkFromEntity[inputFieldEntity].CaretEntity);
                             CommandBuff.RemoveComponent(chunkIdx, inputFieldEntity, typeof(InputFieldCaretEntityLink));
                         }
+
                         CommandBuff.AddComponent(chunkIdx, inputFieldEntity, new DirtyElementFlag());
                     }
-                }
+                } while (PointerEventReader.TryGetNextEvent(out pointerEvent, ref it));
 
                 return caretState;
             }
@@ -200,15 +158,15 @@ namespace DotsUI.Controls
                 return caret;
             }
 
-            private InputFieldCaretState ProcessInput(Entity inputFieldEntity, DynamicBuffer<KeyboardInputBuffer> inputBuffer,
+            private InputFieldCaretState ProcessInput(Entity inputFieldEntity,
                 DynamicBuffer<TextData> textData, InputFieldCaretState caretState, int chunkIndex)
             {
-                for (int i = 0; i < inputBuffer.Length; i++)
+                KeyboardEventReader.GetFirstEvent(inputFieldEntity, out var keyboardEvent, out var it);
+                do
                 {
-                    var key = inputBuffer[i];
-                    if (key.EventType == KeyboardEventType.Key)
+                    if (keyboardEvent.EventType == KeyboardEventType.Key)
                     {
-                        switch ((KeyCode)key.KeyCode)
+                        switch ((KeyCode) keyboardEvent.KeyCode)
                         {
                             case KeyCode.Backspace:
                                 if (caretState.CaretPosition > 0)
@@ -216,6 +174,7 @@ namespace DotsUI.Controls
                                     textData.RemoveAt(caretState.CaretPosition - 1);
                                     caretState.CaretPosition--;
                                 }
+
                                 break;
                             case KeyCode.LeftArrow:
                                 caretState.CaretPosition = math.max(0, caretState.CaretPosition - 1);
@@ -237,108 +196,42 @@ namespace DotsUI.Controls
                     }
                     else
                     {
-                        textData.Insert(caretState.CaretPosition, new TextData() { Value = key.Character });
+                        textData.Insert(caretState.CaretPosition, new TextData() {Value = keyboardEvent.Character});
                         caretState.CaretPosition++;
                     }
-                }
+                } while (KeyboardEventReader.TryGetNextEvent(out keyboardEvent, ref it));
                 return caretState;
             }
 
         }
 
-
-        [BurstCompile]
-        struct CreateTargetToKeyboardEvent : IJobChunk
-        {
-            [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            [ReadOnly] public ArchetypeChunkComponentType<KeyboardEvent> KbdEventType;
-            [WriteOnly] public NativeHashMap<Entity, Entity>.ParallelWriter TargetToEvent;
-
-            public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
-            {
-                var entityArray = chunk.GetNativeArray(EntityType);
-                var eventArray = chunk.GetNativeArray(KbdEventType);
-                for (int i = 0; i < chunk.Count; i++)
-                {
-                    TargetToEvent.TryAdd(eventArray[i].Target, entityArray[i]);
-                }
-            }
-        }
-        [BurstCompile]
-        struct CreateTargetToPointerEvent : IJobChunk
-        {
-            [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            [ReadOnly] public ArchetypeChunkComponentType<PointerEvent> PointerEventType;
-            [WriteOnly] public NativeHashMap<Entity, Entity>.ParallelWriter TargetToEvent;
-
-            public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
-            {
-                var entityArray = chunk.GetNativeArray(EntityType);
-                var eventArray = chunk.GetNativeArray(PointerEventType);
-                for (int i = 0; i < chunk.Count; i++)
-                {
-                    TargetToEvent.TryAdd(eventArray[i].Target, entityArray[i]);
-                }
-            }
-        }
-
-
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            if (m_KeyboardEventGroup.CalculateEntityCount() > 0 || m_PointerEventGroup.CalculateEntityCount() > 0)
+            var keyboardEventReader = m_KeyboardEventQuery.CreateKeyboardEventReader(Allocator.TempJob);
+            var pointerEventReader = m_PointerEventQuery.CreatePointerEventReader(Allocator.TempJob);
+            if (keyboardEventReader.EntityCount > 0 || pointerEventReader.EntityCount > 0)
             {
-                m_TargetToKeyboardEvent.Clear();
-                m_TargetToPointerEvent.Clear();
-                var entityType = GetArchetypeChunkEntityType();
                 using(new Profiling.ProfilerSample("ScheduleJobs"))
                 {
-                    CreateTargetToKeyboardEvent createTargetToKeyboardEvent = new CreateTargetToKeyboardEvent()
-                    {
-                        EntityType = entityType,
-                        KbdEventType = GetArchetypeChunkComponentType<KeyboardEvent>(true),
-                        TargetToEvent = m_TargetToKeyboardEvent.AsParallelWriter()
-                    };
-                    inputDeps = createTargetToKeyboardEvent.Schedule(m_KeyboardEventGroup, inputDeps);
-                    CreateTargetToPointerEvent createTargetToPointerEvent = new CreateTargetToPointerEvent()
-                    {
-                        EntityType = entityType,
-                        PointerEventType = GetArchetypeChunkComponentType<PointerEvent>(true),
-                        TargetToEvent = m_TargetToPointerEvent.AsParallelWriter()
-                    };
-                    inputDeps = createTargetToPointerEvent.Schedule(m_PointerEventGroup, inputDeps);
                     EventProcessor inputEventProcessor = new EventProcessor()
                     {
-                        KeyboardInputBufferFromEntity = GetBufferFromEntity<KeyboardInputBuffer>(true),
-                        PointerInputBufferFromEntity = GetBufferFromEntity<PointerInputBuffer>(true),
+                        PointerEventReader = pointerEventReader,
+                        KeyboardEventReader = keyboardEventReader,
                         InputFieldCaretLinkFromEntity = GetComponentDataFromEntity<InputFieldCaretEntityLink>(true),
-                        EntityType = entityType,
-                        CaretStateType = GetArchetypeChunkComponentType<InputFieldCaretState>(),
-                        InputFieldType = GetArchetypeChunkComponentType<InputField>(),
+                        CaretStateFromEntity = GetComponentDataFromEntity<InputFieldCaretState>(),
+                        InputFieldFromEntity = GetComponentDataFromEntity<InputField>(),
                         TextDataFromEntity = GetBufferFromEntity<TextData>(),
-                        TargetToKeyboardEvent = m_TargetToKeyboardEvent,
-                        TargetToPointerEvent = m_TargetToPointerEvent,
                         CommandBuff = m_InputSystemBarrier.CreateCommandBuffer().ToConcurrent(),
                         CaretArchetype = m_CaretArchetype
                     };
-                    inputDeps = inputEventProcessor.Schedule(m_InputFieldGroup, inputDeps);
+                    inputDeps = inputEventProcessor.Schedule(inputDeps);
                     m_InputSystemBarrier.AddJobHandleForProducer(inputDeps);
                 }
             }
 
+            inputDeps = keyboardEventReader.Dispose(inputDeps);
+            inputDeps = pointerEventReader.Dispose(inputDeps);
             return inputDeps;
-        }
-
-        private void CreateCaretState(Entity focusedEntity)
-        {
-            EntityManager.AddComponentData(focusedEntity, new InputFieldCaretState()
-            {
-                CaretPosition = EntityManager.GetBuffer<TextData>(focusedEntity).Length,
-            });
-            m_CaretEntity = EntityManager.CreateEntity(m_CaretArchetype);
-            EntityManager.SetComponentData(m_CaretEntity, new Parent()
-            {
-                Value = focusedEntity
-            });
         }
     }
 }

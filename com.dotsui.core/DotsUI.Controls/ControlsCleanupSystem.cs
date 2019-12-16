@@ -10,6 +10,7 @@ namespace DotsUI.Controls
         private EntityQuery m_InputFieldEndEditQuery;
         private EntityQuery m_InputFieldReturnQuery;
         private EntityQuery m_SliderValueChangedQuery;
+        private EntityQuery m_ToggleValueChangedQuery;
 
         protected override void OnCreate()
         {
@@ -17,6 +18,7 @@ namespace DotsUI.Controls
             m_SliderValueChangedQuery = GetEntityQuery(typeof(SliderValueChangedEvent));
             m_InputFieldEndEditQuery = GetEntityQuery(typeof(InputFieldEndEditEvent));
             m_InputFieldReturnQuery = GetEntityQuery(typeof(InputFieldReturnEvent));
+            m_ToggleValueChangedQuery = GetEntityQuery(typeof(ToggleValueChangedEvent));
         }
 
         protected override void OnUpdate()
@@ -25,6 +27,7 @@ namespace DotsUI.Controls
             EntityManager.RemoveComponent(m_SliderValueChangedQuery, typeof(SliderValueChangedEvent));
             EntityManager.RemoveComponent(m_InputFieldEndEditQuery, typeof(InputFieldEndEditEvent));
             EntityManager.RemoveComponent(m_InputFieldReturnQuery, typeof(InputFieldReturnEvent));
+            EntityManager.RemoveComponent(m_ToggleValueChangedQuery, typeof(ToggleValueChangedEvent));
         }
     }
 }

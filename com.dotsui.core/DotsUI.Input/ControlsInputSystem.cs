@@ -1,28 +1,21 @@
-﻿using DotsUI.Core;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using DotsUI.Core;
+using DotsUI.Core.Utils;
 using DotsUI.Profiling;
+using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Collections;
-using UnityEngine;
-#if UNITY_2019_3_OR_NEWER
-#else
-using UnityEngine.Experimental.PlayerLoop;
-#endif
-using Unity.Entities;
 using Unity.Transforms;
-using RectTransform = DotsUI.Core.RectTransform;
 
 namespace DotsUI.Input
 {
-    [UpdateInGroup(typeof(InputSystemGroup))]
-    public class ControlsInputSystem : ComponentSystemGroup
-    {
-
-    }
-    [UpdateInGroup(typeof(ControlsInputSystem))]
-    [UpdateAfter(typeof(ControlsInputSystemHandler))]
-    public class ControlsInputBufferSystem : EntityCommandBufferSystem { }
-
     public enum PointerButton
     {
         Invalid = -1,
@@ -79,32 +72,45 @@ namespace DotsUI.Input
         public Entity SelectedEntity;
     }
 
-    [UpdateInGroup(typeof(ControlsInputSystem))]
-    public class ControlsInputSystemHandler : JobComponentSystem
+    [UpdateInGroup(typeof(InputSystemGroup))]
+    public class ControlsInputSystemGroup : ComponentSystemGroup
+    {
+
+    }
+
+    [UpdateInGroup(typeof(ControlsInputSystemGroup))]
+    public class ControlsInputSystem : JobComponentSystem
     {
         private EntityQuery m_RootGroup;
         private float2 m_LastFrameMousePos;
 
-
-        private EntityArchetype m_PointerEventArchetype;
-        private EntityArchetype m_KeyboardEventArchetype;
-
         private NativeArray<MouseButtonState> m_ButtonStates;
 
-        private ControlsInputBufferSystem m_CommandBufferSystem;
+        private NativeMultiHashMap<Entity, PointerInputBuffer> m_PointerTargetToEvent;
+        private NativeList<Entity> m_PointerEventList;
+        private NativeMultiHashMap<Entity, KeyboardInputBuffer> m_KeyboardTargetToEvent;
+        private NativeList<Entity> m_KeyboardEventList;
 
+        public float DragThreshold = 3.0f;
+        private NativeList<NativePointerButtonEvent> m_NativePointerEvents;
+        private NativeList<NativeKeyboardInputEvent> m_NativeKeyboardEvents;
 
-        public float DragThreshold { get; set; }
+        private NativeList<MouseInputFrameData> m_PointerFrameData;
 
         protected override void OnCreate()
         {
-            DragThreshold = 3.0f;
-            m_ButtonStates = new NativeArray<MouseButtonState>(3, Allocator.Persistent);
-            m_CommandBufferSystem = World.GetOrCreateSystem<ControlsInputBufferSystem>();
+            m_NativePointerEvents = new NativeList<NativePointerButtonEvent>(14, Allocator.Persistent);
+            m_NativeKeyboardEvents = new NativeList<NativeKeyboardInputEvent>(14, Allocator.Persistent);
 
-            m_PointerEventArchetype = EntityManager.CreateArchetype(typeof(PointerEvent), typeof(PointerInputBuffer));
-            m_KeyboardEventArchetype =
-                EntityManager.CreateArchetype(typeof(KeyboardEvent), typeof(KeyboardInputBuffer));
+            m_PointerTargetToEvent = new NativeMultiHashMap<Entity, PointerInputBuffer>(16, Allocator.Persistent);
+            m_PointerEventList = new NativeList<Entity>(16, Allocator.Persistent);
+
+            m_KeyboardTargetToEvent = new NativeMultiHashMap<Entity, KeyboardInputBuffer>(16, Allocator.Persistent);
+            m_KeyboardEventList = new NativeList<Entity>(16, Allocator.Persistent);
+
+            m_PointerFrameData = new NativeList<MouseInputFrameData>(8, Allocator.Persistent);
+
+            m_ButtonStates = new NativeArray<MouseButtonState>(3, Allocator.Persistent);
 
             m_RootGroup = GetEntityQuery(new EntityQueryDesc
             {
@@ -113,32 +119,41 @@ namespace DotsUI.Input
                     ComponentType.ReadOnly<RectTransform>(),
                     ComponentType.ReadOnly<Child>(),
                     ComponentType.ReadOnly<WorldSpaceRect>(),
+                    ComponentType.ReadOnly<CanvasSortLayer>(), 
                 },
                 None = new ComponentType[]
                 {
                     typeof(Parent)
                 },
-                Options = EntityQueryOptions.FilterWriteGroup
+                Options = EntityQueryOptions.Default
             });
 
             EntityManager.CreateEntity(typeof(InputSystemState));
-            EntityManager.CreateEntity(typeof(NativePointerInputContainer), typeof(NativePointerButtonEvent), typeof(NativePointerState));
-            EntityManager.CreateEntity(typeof(NativeKeyboardInputContainer), typeof(NativeKeyboardInputEvent));
-            base.OnCreateManager();
+            //EntityManager.CreateEntity(typeof(NativePointerInputContainer), typeof(NativePointerButtonEvent), typeof(NativePointerState));
+            //EntityManager.CreateEntity(typeof(NativeKeyboardInputContainer), typeof(NativeKeyboardInputEvent));
         }
 
         protected override void OnDestroy()
         {
+            m_NativePointerEvents.Dispose();
+            m_NativeKeyboardEvents.Dispose();
+
+            m_PointerTargetToEvent.Dispose();
+            m_PointerEventList.Dispose();
+
+            m_KeyboardTargetToEvent.Dispose();
+            m_KeyboardEventList.Dispose();
+
+            m_PointerFrameData.Dispose();
+
             m_ButtonStates.Dispose();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            GatherEvents(Allocator.TempJob, out var pointerEvents, out var keyboardEvents);
-            var pointerFrameData = GatherPointerFrameData(Allocator.TempJob);
+            var pointerFrameData = GatherPointerFrameData(m_PointerFrameData);
             NativeArray<Entity> roots = m_RootGroup.ToEntityArray(Allocator.TempJob, out var rootsDeps);
             inputDeps = JobHandle.CombineDependencies(inputDeps, rootsDeps);
-            var profilerSample = new ProfilerSample("PrepareBuffers");
             var childrenFromEntity = GetBufferFromEntity<Child>(true);
             var worldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>(true);
             var parentFromEntity = GetComponentDataFromEntity<Parent>(true);
@@ -150,21 +165,20 @@ namespace DotsUI.Input
             NativeArray<Entity> perCanvasHits =
                 new NativeArray<Entity>(pointerFrameData.Length * roots.Length, Allocator.TempJob);
             NativeArray<Entity> globalHits = new NativeArray<Entity>(pointerFrameData.Length, Allocator.TempJob);
-            LowLevelUtils.MemSet(perCanvasHits, default);
-            LowLevelUtils.MemSet(globalHits, default);
-            profilerSample.Dispose();
+            var canvasLayerFromEntity = GetComponentDataFromEntity<CanvasSortLayer>();
 
+            m_PointerTargetToEvent.Clear();
+            m_PointerEventList.Clear();
             ProcessPerCanvasInput process = new ProcessPerCanvasInput()
             {
                 Roots = roots,
                 ChildrenFromEntity = childrenFromEntity,
                 Hits = perCanvasHits,
-                LocalToWorldFromEntity = worldSpaceRectFromEntity,
+                WorldSpaceRectFromEntity = worldSpaceRectFromEntity,
                 PointerInputReceiver = pointerReceiverFromEntity,
                 PointersPosition = pointerFrameData
             };
             inputDeps = process.Schedule(roots.Length, 1, inputDeps);
-            var canvasLayerFromEntity = GetComponentDataFromEntity<CanvasSortLayer>();
             CanvasHitsToGlobal canvasHits = new CanvasHitsToGlobal()
             {
                 Roots = roots,
@@ -173,9 +187,6 @@ namespace DotsUI.Input
                 PerCanvasHits = perCanvasHits
             };
             inputDeps = canvasHits.Schedule(inputDeps);
-
-            EntityCommandBuffer ecb = m_CommandBufferSystem.CreateCommandBuffer();
-            NativeMultiHashMap<Entity, PointerInputBuffer> targetToEvent = new NativeMultiHashMap<Entity, PointerInputBuffer>(16, Allocator.TempJob);
             UpdatePointerEvents updatePointerJob = new UpdatePointerEvents()
             {
                 ButtonStates = m_ButtonStates,
@@ -183,42 +194,74 @@ namespace DotsUI.Input
                 Hits = globalHits,
                 ReceiverFromEntity = pointerReceiverFromEntity,
                 StateFromEntity = stateComponentFromEntity,
-                PointerEvents = pointerEvents,
+                PointerEvents = m_NativePointerEvents.AsParallelReader(),
                 ParentFromEntity = parentFromEntity,
                 PointerFrameData = pointerFrameData,
                 DragThreshold = DragThreshold,
-                TargetToEvent = targetToEvent
+                TargetToEvent = m_PointerTargetToEvent,
+                PointerEventList = m_PointerEventList,
             };
             inputDeps = updatePointerJob.Schedule(inputDeps);
-            SpawnPointerEvents spawnEventsJob = new SpawnPointerEvents()
-            {
-                EventArchetype = m_PointerEventArchetype,
-                Ecb = ecb,
-                TargetToEvent = targetToEvent
-            };
-            inputDeps = spawnEventsJob.Schedule(inputDeps);
-            inputDeps = targetToEvent.Dispose(inputDeps);
             UpdateKeyboardEvents updateKeyboardJob = new UpdateKeyboardEvents()
             {
-                KeyboardEvents = keyboardEvents,
-                EventArchetype = m_KeyboardEventArchetype,
-                Manager = ecb,
+                KeyboardEvents = m_NativeKeyboardEvents.AsParallelReader(),
+                KeyboardTargetToEvent = m_KeyboardTargetToEvent,
+                KeyboardTargetList = m_KeyboardEventList,
                 StateEntity = stateEntity,
                 StateFromEntity = stateComponentFromEntity
             };
             inputDeps = updateKeyboardJob.Schedule(inputDeps);
-            m_CommandBufferSystem.AddJobHandleForProducer(inputDeps);
-            m_LastFrameMousePos = (Vector2) UnityEngine.Input.mousePosition;
+            ClearNativeBuffers clearBuffers = new ClearNativeBuffers()
+            {
+                PointerEventBuffer = m_NativePointerEvents,
+                KeyboardEventBuffer = m_NativeKeyboardEvents,
+            };
+            inputDeps = clearBuffers.Schedule(inputDeps);
+            inputDeps.Complete();
+
             return inputDeps;
         }
 
-        private NativeArray<MouseInputFrameData> GatherPointerFrameData(Allocator allocator)
+        internal NativeList<Entity> QueryPointerEvents(ComponentType requiredType, Allocator allocator)
+        {
+            return QueryListByComponent(m_PointerEventList, requiredType, allocator);
+        }
+
+        internal NativeList<Entity> QueryKeyboardEvents(ComponentType requiredType, Allocator allocator)
+        {
+            return QueryListByComponent(m_KeyboardEventList, requiredType, allocator);
+        }
+
+        NativeList<Entity> QueryListByComponent(NativeList<Entity> entityList, ComponentType requiredType, Allocator allocator)
+        {
+            NativeList<Entity> ret = new NativeList<Entity>(allocator);
+            for (int i = 0; i < entityList.Length; i++)
+            {
+                if (EntityManager.HasComponent(entityList[i], requiredType))
+                    ret.Add(entityList[i]);
+            }
+            return ret;
+        }
+
+        public NativeEventWriter GetEventWriter()
+        {
+            return new NativeEventWriter(m_NativePointerEvents, m_NativeKeyboardEvents);
+        }
+
+        /// <summary>
+        /// TODO: This function has to be refactored and moved to the Hybrid package.
+        /// </summary>
+        /// <param name="allocator"></param>
+        /// <returns></returns>
+        private NativeArray<MouseInputFrameData> GatherPointerFrameData(NativeList<MouseInputFrameData> frameData)
         {
             using (new ProfilerSample("GatherPointerFrameData"))
             {
-                NativeArray<MouseInputFrameData> ret =
-                    new NativeArray<MouseInputFrameData>(1 + UnityEngine.Input.touchCount, allocator);
-                float2 mousePos = ((float3) UnityEngine.Input.mousePosition).xy;
+                var sampl = new ProfilerSample("Reloc");
+                frameData.ResizeUninitialized(1 + UnityEngine.Input.touchCount);
+                var ret = frameData.AsArray();
+                sampl.Dispose();
+                float2 mousePos = ((float3)UnityEngine.Input.mousePosition).xy;
                 ret[0] = new MouseInputFrameData()
                 {
                     Position = mousePos,
@@ -226,7 +269,7 @@ namespace DotsUI.Input
                 };
                 for (int i = 0; i < UnityEngine.Input.touchCount; i++)
                 {
-                    Touch touch = UnityEngine.Input.GetTouch(i);
+                    UnityEngine.Touch touch = UnityEngine.Input.GetTouch(i);
                     ret[i + 1] = new MouseInputFrameData()
                     {
                         Position = touch.position,
@@ -234,51 +277,19 @@ namespace DotsUI.Input
                     };
                 }
 
+                m_LastFrameMousePos = mousePos;
                 return ret;
             }
         }
 
-        private void GatherEvents(Allocator allocator, out NativeArray<NativePointerButtonEvent> pointerEventsArray, out NativeArray<NativeKeyboardInputEvent> keyboardEventArray)
+        internal NativeMultiHashMap<Entity, PointerInputBuffer> GetPointerEventMap()
         {
-            using(new ProfilerSample("GatherEvents"))
-            {
-                var pointerContainerEntity = GetSingletonEntity<NativePointerInputContainer>();
-                var keyboardContainerEntity = GetSingletonEntity<NativeKeyboardInputContainer>();
-
-                var pointerBuffer = EntityManager.GetBuffer<NativePointerButtonEvent>(pointerContainerEntity);
-                var keyboardBuffer = EntityManager.GetBuffer<NativeKeyboardInputEvent>(keyboardContainerEntity);
-
-                pointerEventsArray = new NativeArray<NativePointerButtonEvent>(pointerBuffer.Length, allocator);
-                keyboardEventArray = new NativeArray<NativeKeyboardInputEvent>(keyboardBuffer.Length, allocator);
-
-                for (int i = 0; i < pointerBuffer.Length; i++)
-                    pointerEventsArray[i] = pointerBuffer[i];
-
-                for (int i = 0; i < keyboardBuffer.Length; i++)
-                    keyboardEventArray[i] = keyboardBuffer[i];
-
-                pointerBuffer.Clear();
-                keyboardBuffer.Clear();
-            }
+            return m_PointerTargetToEvent;
         }
 
-        private NativeArray<float2> GatherPointersPositions(Allocator allocator)
+        internal NativeMultiHashMap<Entity, KeyboardInputBuffer> GetKeyboardEventMap()
         {
-            var ret = new NativeArray<float2>(UnityEngine.Input.touchCount + 1, allocator);
-            ret[0] = ((float3)(UnityEngine.Input.mousePosition)).xy;
-            for (int i = 0; i < UnityEngine.Input.touchCount; i++)
-            {
-                ret[i + 1] = UnityEngine.Input.GetTouch(i).position;
-            }
-
-            return ret;
-        }
-
-
-        bool IsValidKeyboardEventReceiver(Entity entity)
-        {
-            return EntityManager.Exists(entity) &&
-                   EntityManager.HasComponent<KeyboardInputReceiver>(entity);
+            return m_KeyboardTargetToEvent;
         }
     }
 }

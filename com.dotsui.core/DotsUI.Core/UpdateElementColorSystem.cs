@@ -20,7 +20,7 @@ namespace DotsUI.Core
                     ComponentType.ReadOnly<UpdateElementColor>(),
                     ComponentType.ReadOnly<VertexColorValue>(),
                     ComponentType.ReadOnly<VertexColorMultiplier>(),
-                    ComponentType.ReadWrite<ControlVertexData>(),
+                    ComponentType.ReadWrite<ElementVertexData>(),
                     ComponentType.ReadOnly<RebuildElementMeshFlag>(), 
                 }
             });
@@ -31,7 +31,7 @@ namespace DotsUI.Core
         {
             [NativeDisableContainerSafetyRestriction] public BufferFromEntity<MeshVertex> VertexFromCanvasEntity;
             [ReadOnly] public ComponentDataFromEntity<Parent> ParentFromEntity;
-            [NativeDisableContainerSafetyRestriction]public ArchetypeChunkBufferType<ControlVertexData> VertexDataType;
+            [NativeDisableContainerSafetyRestriction]public ArchetypeChunkBufferType<ElementVertexData> VertexDataType;
             [ReadOnly] public ArchetypeChunkComponentType<ElementVertexPointerInMesh> VertexPointerInCanvasMeshType;
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public ArchetypeChunkComponentType<VertexColorValue> VertexColorType;
@@ -87,7 +87,7 @@ namespace DotsUI.Core
                 ParentFromEntity = GetComponentDataFromEntity<Parent>(true),
                 VertexColorType = GetArchetypeChunkComponentType<VertexColorValue>(true),
                 VertexColorMultiplierType = GetArchetypeChunkComponentType<VertexColorMultiplier>(true),
-                VertexDataType = GetArchetypeChunkBufferType<ControlVertexData>(),
+                VertexDataType = GetArchetypeChunkBufferType<ElementVertexData>(),
                 VertexFromCanvasEntity = GetBufferFromEntity<MeshVertex>(),
                 VertexPointerInCanvasMeshType = GetArchetypeChunkComponentType<ElementVertexPointerInMesh>(true),
                 RebuildElementMeshFlagType = GetArchetypeChunkComponentType<RebuildElementMeshFlag>(true)

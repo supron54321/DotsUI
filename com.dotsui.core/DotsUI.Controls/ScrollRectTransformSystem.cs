@@ -49,6 +49,7 @@ namespace DotsUI.Controls
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<ElementScale> ElementScaleFromEntity;
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<WorldSpaceMask> WorldSpaceMaskFromEntity;
             [ReadOnly] public ComponentDataFromEntity<RectMask> RectMaskFromEntity;
+            [ReadOnly] public ComponentDataFromEntity<Disabled> DisabledFromEntity;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
@@ -56,6 +57,7 @@ namespace DotsUI.Controls
                 NativeArray<Entity> scrollEntity = chunk.GetNativeArray(EntityType);
                 var rebuildContext = new HierarchyRebuildContext()
                 {
+                    DisabledFromEntity = DisabledFromEntity,
                     ChildrenFromEntity = ChildrenFromEntity,
                     WorldSpaceRectFromEntity = WorldSpaceRectFromEntity,
                     RectTransformFromEntity = RectTransformFromEntity,
@@ -207,6 +209,7 @@ namespace DotsUI.Controls
                 ScrollRectType = GetArchetypeChunkComponentType<ScrollRect>(),
 
                 WorldSpaceRectFromEntity = GetComponentDataFromEntity<WorldSpaceRect>(),
+                DisabledFromEntity = GetComponentDataFromEntity<Disabled>(),
                 RectTransformFromEntity = GetComponentDataFromEntity<RectTransform>(),
                 ScrollBarFromEntity = GetComponentDataFromEntity<ScrollBar>(),
                 ChildrenFromEntity = GetBufferFromEntity<Child>(),

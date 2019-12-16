@@ -41,6 +41,9 @@ namespace DotsUI.Hybrid
             DstEntityManager.RemoveComponent(entity, typeof(Rotation));
             DstEntityManager.RemoveComponent(entity, typeof(NonUniformScale));
 
+            DstEntityManager.RemoveComponent(entity, typeof(LocalToWorld));
+            DstEntityManager.RemoveComponent(entity, typeof(LocalToParent));
+
             if (transform.childCount != 0)
             {
                 var childBuffer = DstEntityManager.AddBuffer<Child>(entity);

@@ -10,9 +10,13 @@ using UnityEngine.UI;
 namespace DotsUI.Hybrid
 {
 
-    abstract class SelectableConversionSystem : DotsUIConversionSystem
+    abstract class SelectableConversionSystem<T> : DotsUIConversionSystem where T : Selectable
     {
-        protected void ConvertSelectable(Selectable selectable)
+        protected sealed override void OnUpdate()
+        {
+            Entities.ForEach<T>(ConvertSelectable);
+        }
+        private void ConvertSelectable(T selectable)
         {
             var entity = GetPrimaryEntity(selectable);
             DstEntityManager.AddComponent(entity, typeof(Input.Selectable));
@@ -30,6 +34,10 @@ namespace DotsUI.Hybrid
             });
 
             RegisterEventHandler(entity, Input.PointerEventType.SelectableGroup);
+
+            ConvertUnityComponent(selectable);
         }
+
+        protected abstract void ConvertUnityComponent(T component);
     }
 }

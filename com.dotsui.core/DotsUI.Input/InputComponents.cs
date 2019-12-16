@@ -33,15 +33,6 @@ namespace DotsUI.Input
         
         SelectableGroup = Down | Up | Click | Enter | Exit | Selected | Deselected,
     }
-    public struct OnLostFocusEvent : IComponentData
-    {
-
-    }
-
-    public struct OnFocusEvent : IComponentData
-    {
-
-    }
     public struct PointerInputReceiver : IComponentData
     {
         public PointerEventType ListenerTypes;
@@ -52,16 +43,6 @@ namespace DotsUI.Input
 
     }
 
-
-    public struct PointerEvent : IComponentData
-    {
-        public Entity Target;
-    }
-    public struct KeyboardEvent : IComponentData
-    {
-        public Entity Target;
-    }
-
     
 
     public enum KeyboardEventType
@@ -70,14 +51,18 @@ namespace DotsUI.Input
         Key
     }
 
-    public struct PointerInputBuffer : IBufferElementData
+    public interface IInputEvent
+    {
+
+    }
+    public struct PointerInputBuffer : IInputEvent
     {
         public int EventId;
         public PointerEventType EventType;
         public PointerEventData EventData;
     }
 
-    public struct KeyboardInputBuffer : IBufferElementData
+    public struct KeyboardInputBuffer : IInputEvent
     {
         public KeyboardEventType EventType;
         public ushort KeyCode;

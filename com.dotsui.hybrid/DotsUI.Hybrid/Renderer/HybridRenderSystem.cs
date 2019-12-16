@@ -199,7 +199,6 @@ namespace DotsUI.Hybrid
                         continue;
                     }
 
-                    var entity = chunk.GetNativeArray(entityType)[0];
                     var commandBuffer = chunk.GetSharedComponentData(commandBufferType, EntityManager);
                     var mesh = chunk.GetSharedComponentData(meshType, EntityManager);
                     var vertices = chunk.GetBufferAccessor(vertexBufferType)[0];

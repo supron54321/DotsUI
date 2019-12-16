@@ -9,27 +9,6 @@ using UnityEngine.TextCore;
 
 namespace DotsUI.Core
 {
-    public struct GlyphInfo
-    {
-        public float Scale;
-        public GlyphRect Rect;
-        public GlyphMetrics Metrics;
-    }
-
-    public struct FontInfo
-    {
-        public float LineHeight;
-        public float NormalSpace;
-        public float BoldSpace;
-        public float AscentLine;
-        public float CapLine;
-        public float MeanLine;
-        public float Baseline;
-        public float DescentLine;
-        public float PointSize;
-        public float BoldStyle;
-        public float NormalStyle;
-    }
 
     [UnityEngine.ExecuteAlways]
     [UpdateInGroup(typeof(ElementMeshUpdateSystemGroup))]
@@ -38,7 +17,6 @@ namespace DotsUI.Core
         [BurstCompile(FloatMode = FloatMode.Fast)]
         private struct TextChunkBuilder : IJobChunk
         {
-            [ReadOnly] public ArchetypeChunkEntityType TextEntities;
             [ReadOnly] public ArchetypeChunkComponentType<WorldSpaceRect> WorldSpaceRectType;
             [ReadOnly] public ArchetypeChunkComponentType<VertexColorValue> ColorValueType;
             [ReadOnly] public ArchetypeChunkComponentType<VertexColorMultiplier> ColorMultiplierType;
@@ -51,9 +29,9 @@ namespace DotsUI.Core
             [ReadOnly] public BufferFromEntity<FontGlyphData> FontGlyphDataFromEntity;
 
             [NativeDisableContainerSafetyRestriction]
-            public ArchetypeChunkBufferType<ControlVertexData> VertexDataType;
+            public ArchetypeChunkBufferType<ElementVertexData> VertexDataType;
             [NativeDisableContainerSafetyRestriction]
-            public ArchetypeChunkBufferType<ControlVertexIndex> IndexDataType;
+            public ArchetypeChunkBufferType<ElementVertexIndex> IndexDataType;
 
             [ReadOnly]
             public ArchetypeChunkBufferType<TextData> TextBufferType;
@@ -95,7 +73,7 @@ namespace DotsUI.Core
             }
 
 
-            private void PopulateMesh(WorldSpaceRect rect, ElementScale scale, WorldSpaceMask mask, TextRenderer settings, float4 color, ref DynamicBuffer<TextData> textBuffer, ref DynamicBuffer<ControlVertexData> vertices, ref DynamicBuffer<ControlVertexIndex> triangles)
+            private void PopulateMesh(WorldSpaceRect rect, ElementScale scale, WorldSpaceMask mask, TextRenderer settings, float4 color, ref DynamicBuffer<TextData> textBuffer, ref DynamicBuffer<ElementVertexData> vertices, ref DynamicBuffer<ElementVertexIndex> triangles)
             {
                 _VerticalAlignmentOptions verticalAlignment = (_VerticalAlignmentOptions)settings.Alignment;
                 _HorizontalAlignmentOptions horizontalAlignment = (_HorizontalAlignmentOptions)settings.Alignment;
@@ -151,15 +129,15 @@ namespace DotsUI.Core
                             uv.xy = uv.xy + cut.UvMin;
                             uv.zw = uv.zw - cut.UvMax;
 
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 2 });
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 1 });
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex + 2 });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex + 1 });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex });
 
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 3 });
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex + 2 });
-                            triangles.Add(new ControlVertexIndex() { Value = startIndex });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex + 3 });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex + 2 });
+                            triangles.Add(new ElementVertexIndex() { Value = startIndex });
 
-                            vertices.Add(new ControlVertexData()
+                            vertices.Add(new ElementVertexData()
                             {
                                 Position = new float3(vertexPos.xy, 0.0f),
                                 Normal = new float3(0.0f, 0.0f, -1.0f),
@@ -167,7 +145,7 @@ namespace DotsUI.Core
                                 TexCoord1 = uv2,
                                 Color = color
                             });
-                            vertices.Add(new ControlVertexData()
+                            vertices.Add(new ElementVertexData()
                             {
                                 Position = new float3(vertexPos.zy, 0.0f),
                                 Normal = new float3(0.0f, 0.0f, -1.0f),
@@ -175,7 +153,7 @@ namespace DotsUI.Core
                                 TexCoord1 = uv2,
                                 Color = color
                             });
-                            vertices.Add(new ControlVertexData()
+                            vertices.Add(new ElementVertexData()
                             {
                                 Position = new float3(vertexPos.zw, 0.0f),
                                 Normal = new float3(0.0f, 0.0f, -1.0f),
@@ -183,7 +161,7 @@ namespace DotsUI.Core
                                 TexCoord1 = uv2,
                                 Color = color
                             });
-                            vertices.Add(new ControlVertexData()
+                            vertices.Add(new ElementVertexData()
                             {
                                 Position = new float3(vertexPos.xw, 0.0f),
                                 Normal = new float3(0.0f, 0.0f, -1.0f),
@@ -214,55 +192,39 @@ namespace DotsUI.Core
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<WorldSpaceRect>(),
-                    ComponentType.ReadWrite<ControlVertexData>(),
-                    ComponentType.ReadWrite<ControlVertexIndex>(),
+                    ComponentType.ReadWrite<ElementVertexData>(),
+                    ComponentType.ReadWrite<ElementVertexIndex>(),
                     ComponentType.ReadOnly<TextRenderer>(),
                     ComponentType.ReadOnly<TextData>(),
                     ComponentType.ReadOnly<RebuildElementMeshFlag>(),
                 },
                 Options = EntityQueryOptions.FilterWriteGroup
             });
+            m_TextGroup.SetChangedVersionFilter(ComponentType.ReadOnly(typeof(WorldSpaceRect)));
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
+            if (m_TextGroup.CalculateEntityCount() <= 0)
+                return inputDeps;
             TextChunkBuilder chunkJob = new TextChunkBuilder()
             {
-                TextEntities = GetArchetypeChunkEntityType(),
                 TextBufferType = GetArchetypeChunkBufferType<TextData>(true),
                 WorldSpaceRectType = GetArchetypeChunkComponentType<WorldSpaceRect>(true),
                 ColorValueType = GetArchetypeChunkComponentType<VertexColorValue>(true),
                 ColorMultiplierType = GetArchetypeChunkComponentType<VertexColorMultiplier>(true),
                 TextRendererType = GetArchetypeChunkComponentType<TextRenderer>(true),
-                VertexDataType = GetArchetypeChunkBufferType<ControlVertexData>(),
-                IndexDataType = GetArchetypeChunkBufferType<ControlVertexIndex>(),
+                VertexDataType = GetArchetypeChunkBufferType<ElementVertexData>(),
+                IndexDataType = GetArchetypeChunkBufferType<ElementVertexIndex>(),
                 RebuildElementMeshFlagArray = GetArchetypeChunkComponentType<RebuildElementMeshFlag>(),
                 FontAssetFromEntity = GetComponentDataFromEntity<TextFontAsset>(true),
                 FontGlyphDataFromEntity = GetBufferFromEntity<FontGlyphData>(true),
                 ElementScaleType = GetArchetypeChunkComponentType<ElementScale>(true),
                 WorldSpaceMaskType = GetArchetypeChunkComponentType<WorldSpaceMask>(true)
             };
-            //inputDeps = chunkJob.Schedule(chunkJob.TextEntities.Length, 1, inputDeps);
             inputDeps = chunkJob.Schedule(m_TextGroup, inputDeps);
-            //}
 
             return inputDeps;
-        }
-
-        private NativeHashMap<ushort, GlyphInfo> CreateGlyphDataLookupTable(TMP_FontAsset font, Allocator allocator)
-        {
-            NativeHashMap<ushort, GlyphInfo> ret = new NativeHashMap<ushort, GlyphInfo>(font.glyphLookupTable.Count, allocator);
-            foreach (var glyph in font.characterLookupTable)
-            {
-                ret.TryAdd((ushort)glyph.Key, new GlyphInfo()
-                {
-                    Scale = glyph.Value.scale,
-                    Rect = glyph.Value.glyph.glyphRect,
-                    Metrics = glyph.Value.glyph.metrics
-                });
-            }
-
-            return ret;
         }
     }
 }

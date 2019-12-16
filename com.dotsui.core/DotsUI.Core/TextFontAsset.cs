@@ -5,6 +5,8 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.TextCore;
 
+//using UnityEngine.TextCore;
+
 namespace DotsUI.Core
 {
     public struct TextFontAsset : IComponentData

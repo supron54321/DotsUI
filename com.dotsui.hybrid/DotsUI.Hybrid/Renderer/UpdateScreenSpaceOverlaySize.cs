@@ -25,7 +25,7 @@ namespace DotsUI.Hybrid
                 All = new[]
                 {
                     ComponentType.ReadOnly<CanvasScreenSpaceOverlay>(),
-                    ComponentType.ReadWrite<CanvasScreenSize>(),
+                    ComponentType.ReadWrite<CanvasSize>(),
                 }
             });
         }
@@ -38,12 +38,12 @@ namespace DotsUI.Hybrid
             {
                 using (var chunkArray = m_UpdateSizeGroup.CreateArchetypeChunkArray(Allocator.TempJob))
                 {
-                    var sizeType = GetArchetypeChunkComponentType<CanvasScreenSize>();
+                    var sizeType = GetArchetypeChunkComponentType<CanvasSize>();
                     var entityType = GetArchetypeChunkEntityType();
                     NativeQueue<Entity> commandBuffer = new NativeQueue<Entity>(Allocator.Temp);
                     foreach (var chunk in chunkArray)
                     {
-                        var canvasSize = new CanvasScreenSize()
+                        var canvasSize = new CanvasSize()
                         {
                             Value = new int2(newWidth, newHeight)
                         };

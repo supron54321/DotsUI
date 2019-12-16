@@ -56,7 +56,7 @@ namespace DotsUI.Core
                 None = new ComponentType[]
                 {
                     typeof(ElementCanvasReference),
-                    typeof(CanvasScreenSize)    // should be enough to exclude canvases
+                    typeof(CanvasSize)    // should be enough to exclude canvases
                 }
             });
             m_MissingHierarchyIndex = GetEntityQuery(new EntityQueryDesc()

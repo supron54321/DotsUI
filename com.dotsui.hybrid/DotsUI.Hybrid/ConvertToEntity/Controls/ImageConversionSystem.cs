@@ -30,8 +30,8 @@ namespace DotsUI.Hybrid
                 Asset = assetEntity
             };
             DstEntityManager.AddComponentData(entity, spriteImage);
-            DstEntityManager.AddBuffer<ControlVertexData>(entity);
-            DstEntityManager.AddBuffer<ControlVertexIndex>(entity);
+            DstEntityManager.AddBuffer<ElementVertexData>(entity);
+            DstEntityManager.AddBuffer<ElementVertexIndex>(entity);
             DstEntityManager.AddComponent(entity, typeof(ElementVertexPointerInMesh));
             DstEntityManager.AddComponentData(entity, new RebuildElementMeshFlag() { Rebuild = true });
             ConvertGraphic(image);

@@ -6,17 +6,18 @@ namespace DotsUI.Core.Utils
 {
     public class MicroCommandBufferSystem : EntityCommandBufferSystem
     {
-        private List<AddFlagComponentCommandBuffer> m_AddFlagBuffers = new List<AddFlagComponentCommandBuffer>(32);
-        public AddFlagComponentCommandBuffer CreateAddFlagComponentCommandBuffer<T>() where T : IComponentData
+        private List<FlagComponentCommandBuffer> m_AddFlagBuffers = new List<FlagComponentCommandBuffer>(32);
+        
+        public FlagComponentCommandBuffer CreateFlagComponentCommandBuffer<T>() where T : IComponentData
         {
-            var flagBuffer = new AddFlagComponentCommandBuffer(typeof(T), Allocator.TempJob);
+            var flagBuffer = new FlagComponentCommandBuffer(typeof(T), Allocator.TempJob);
             m_AddFlagBuffers.Add(flagBuffer);
             return flagBuffer;
         }
         protected override void OnCreate()
         {
             base.OnCreate();
-            //m_AddFlagBuffers = new NativeList<AddFlagComponentCommandBuffer>(Allocator.Persistent);
+            //m_AddFlagBuffers = new NativeList<FlagComponentCommandBuffer>(Allocator.Persistent);
         }
 
         protected override void OnDestroy()

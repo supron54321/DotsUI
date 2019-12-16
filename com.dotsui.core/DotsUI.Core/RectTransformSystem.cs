@@ -19,7 +19,7 @@ namespace DotsUI.Core
             [ReadOnly]
             public float2 Dpi;
             [ReadOnly] public ArchetypeChunkComponentType<RectTransform> RectTransformType;
-            [ReadOnly] public ArchetypeChunkComponentType<CanvasScreenSize> CanvasSizeType;
+            [ReadOnly] public ArchetypeChunkComponentType<CanvasSize> CanvasSizeType;
             [ReadOnly] public ArchetypeChunkEntityType EntityType;
             [ReadOnly] public ArchetypeChunkBufferType<Child> ChildType;
             [ReadOnly] public ArchetypeChunkComponentType<CanvasConstantPhysicalSizeScaler> ConstantPhysicalScaler;
@@ -74,7 +74,7 @@ namespace DotsUI.Core
                 All = new ComponentType[]
                 {
                     ComponentType.ReadOnly<RectTransform>(),
-                    ComponentType.ReadOnly<CanvasScreenSize>(),
+                    ComponentType.ReadOnly<CanvasSize>(),
                     ComponentType.ReadOnly<Child>(),
                     ComponentType.ReadOnly<RebuildCanvasHierarchyFlag>(),
                     typeof(WorldSpaceRect),
@@ -100,7 +100,7 @@ namespace DotsUI.Core
             {
                 Dpi = new float2(dpi, dpi),
                 RectTransformType = GetArchetypeChunkComponentType<RectTransform>(true),
-                CanvasSizeType = GetArchetypeChunkComponentType<CanvasScreenSize>(true),
+                CanvasSizeType = GetArchetypeChunkComponentType<CanvasSize>(true),
                 EntityType = entityType,
                 ChildType = childType,
                 ConstantPhysicalScaler = GetArchetypeChunkComponentType<CanvasConstantPhysicalSizeScaler>(true),

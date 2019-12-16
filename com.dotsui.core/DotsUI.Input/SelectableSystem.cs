@@ -1,3 +1,4 @@
+using System.Drawing;
 using DotsUI.Core;
 using DotsUI.Core.Utils;
 using Unity.Burst;
@@ -9,14 +10,15 @@ using Unity.Mathematics;
 namespace DotsUI.Input
 {
     [UpdateInGroup(typeof(InputSystemGroup))]
-    [UpdateAfter(typeof(ControlsInputSystem))]
-    public class SelectableSystem : PointerInputComponentSystem<Selectable>
+    [UpdateAfter(typeof(ControlsInputSystemGroup))]
+    public class SelectableSystem : JobComponentSystem
     {
         private EntityQuery m_SelectableGroup;
 
         private InputHandleBarrier m_Barrier;
+        private PointerEventQuery m_EventQuery;
 
-        protected override void OnCreateInput()
+        protected override void OnCreate()
         {
             m_Barrier = World.GetOrCreateSystem<InputHandleBarrier>();
             m_SelectableGroup = GetEntityQuery(new EntityQueryDesc()
@@ -28,114 +30,122 @@ namespace DotsUI.Input
                     ComponentType.ReadWrite<VertexColorValue>()
                 }
             });
+            m_EventQuery = PointerEventQuery.Create<Selectable>(EntityManager);
             RequireForUpdate(m_SelectableGroup);
         }
 
-        protected override void OnDestroyInput()
+        protected override void OnDestroy()
         {
         }
 
         [BurstCompile]
         struct SetColorValueJob : IJobChunk
         {
-            [ReadOnly] public ArchetypeChunkComponentType<SelectableColor> SelectableColorType;
-            public ArchetypeChunkComponentType<Selectable> SelectableType;
-            [ReadOnly] public ArchetypeChunkEntityType EntityType;
-            [ReadOnly] public BufferFromEntity<PointerInputBuffer> PointerInputType;
-            [ReadOnly] public NativeHashMap<Entity, Entity> TargetToEvent;
+            [ReadOnly] public ComponentDataFromEntity<SelectableColor> SelectableColorType;
+            [NativeDisableParallelForRestriction] public ComponentDataFromEntity<Selectable> SelectableType;
 
             // This is probably not the best idea to disable this restriction, since different selecatables can point to the same target
             [NativeDisableParallelForRestriction] public ComponentDataFromEntity<VertexColorMultiplier> ColorMultiplierFromEntity;
-            public AddFlagComponentCommandBuffer.ParallelWriter ToUpdate;
+            public FlagComponentCommandBuffer.ParallelWriter ToUpdate;
+            public InputEventReader<PointerInputBuffer> EventReader;
 
             public void Execute(ArchetypeChunk chunk, int chunkIndex, int firstEntityIndex)
             {
-                var selectableColorArray = chunk.GetNativeArray(SelectableColorType);
-                var selectableArray = chunk.GetNativeArray(SelectableType);
-                var entityArray = chunk.GetNativeArray(EntityType);
 
-                for (int i = 0; i < chunk.Count; i++)
+                for (int i = 0; i < EventReader.EntityCount; i++)
                 {
-                    var selectableState = selectableArray[i];
+                    var entity = EventReader[i];
+                    var selectableColor = SelectableColorType[entity];
+                    var selectableState = SelectableType[entity];
 
-                    if (TargetToEvent.TryGetValue(entityArray[i], out Entity eventEntity))
-                    {
-                        var inputBuffer = PointerInputType[eventEntity];
-                        for (int j = 0; j < inputBuffer.Length; j++)
-                        {
-                            var input = inputBuffer[j];
-                            if (input.EventType == PointerEventType.Down && input.EventData.Button == PointerButton.Left)
-                                selectableState.Value |= SelectableState.Pressed;
-                            else if (input.EventType == PointerEventType.Up && input.EventData.Button == PointerButton.Left)
-                                selectableState.Value &= (~SelectableState.Pressed);
-                            else if (input.EventType == PointerEventType.Enter)
-                                selectableState.Value |= SelectableState.Hovered;
-                            else if (input.EventType == PointerEventType.Exit)
-                                selectableState.Value &= (~SelectableState.Hovered);
-                            else if (input.EventType == PointerEventType.Selected)
-                                selectableState.Value |= SelectableState.Selected;
-                            else if (input.EventType == PointerEventType.Deselected)
-                                selectableState.Value &= (~SelectableState.Selected);
-                        }
-                    }
+                    selectableState = ParseEntityEvents(entity, selectableState);
 
-                    var target = selectableColorArray[i].Target;
+                    var target = selectableColor.Target;
                     if (ColorMultiplierFromEntity.Exists(target))
                     {
                         var currentColor = ColorMultiplierFromEntity[target].Value;
                         float4 newColor = currentColor;
                         if ((selectableState.Value & SelectableState.Pressed) == SelectableState.Pressed)
                         {
-                            newColor = selectableColorArray[i].Pressed;
+                            newColor = selectableColor.Pressed;
                         }
                         else if ((selectableState.Value & SelectableState.Selected) == SelectableState.Selected)
                         {
-                            newColor = selectableColorArray[i].Selected;
+                            newColor = selectableColor.Selected;
                         }
                         else if ((selectableState.Value & SelectableState.Hovered) == SelectableState.Hovered)
                         {
-                            newColor = selectableColorArray[i].Hover;
+                            newColor = selectableColor.Hover;
                         }
                         else
                         {
-                            newColor = selectableColorArray[i].Normal;
+                            newColor = selectableColor.Normal;
                         }
 
                         if (!currentColor.Equals(newColor))
                         {
-                            ColorMultiplierFromEntity[selectableColorArray[i].Target] = new VertexColorMultiplier()
+                            ColorMultiplierFromEntity[selectableColor.Target] = new VertexColorMultiplier()
                             {
                                 Value = newColor
                             };
                         }
 
                         ToUpdate.TryAdd(target);
-                        selectableArray[i] = selectableState;
                     }
 
+                    SelectableType[entity] = selectableState;
                 }
+
+            }
+
+            private Selectable ParseEntityEvents(Entity entity, Selectable selectableState)
+            {
+                EventReader.GetFirstEvent(entity, out var pointerEvent, out var it);
+                do
+                {
+                    selectableState = ParseEvent(pointerEvent, selectableState);
+                } while (EventReader.TryGetNextEvent(out pointerEvent, ref it));
+                return selectableState;
+            }
+
+            private static Selectable ParseEvent(PointerInputBuffer pointerEvent, Selectable selectableState)
+            {
+                if (pointerEvent.EventType == PointerEventType.Down && pointerEvent.EventData.Button == PointerButton.Left)
+                    selectableState.Value |= SelectableState.Pressed;
+                else if (pointerEvent.EventType == PointerEventType.Up && pointerEvent.EventData.Button == PointerButton.Left)
+                    selectableState.Value &= (~SelectableState.Pressed);
+                else if (pointerEvent.EventType == PointerEventType.Enter)
+                    selectableState.Value |= SelectableState.Hovered;
+                else if (pointerEvent.EventType == PointerEventType.Exit)
+                    selectableState.Value &= (~SelectableState.Hovered);
+                else if (pointerEvent.EventType == PointerEventType.Selected)
+                    selectableState.Value |= SelectableState.Selected;
+                else if (pointerEvent.EventType == PointerEventType.Deselected)
+                    selectableState.Value &= (~SelectableState.Selected);
+                return selectableState;
             }
         };
-        protected override JobHandle OnUpdateInput(JobHandle inputDeps, NativeHashMap<Entity, Entity> targetToEvent, BufferFromEntity<PointerInputBuffer> pointerBufferFromEntity)
+        protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            var selectableColorType = GetArchetypeChunkComponentType<SelectableColor>(true);
-            var selectableType = GetArchetypeChunkComponentType<Selectable>();
-            var entityType = GetArchetypeChunkEntityType();
-
-            NativeHashMap<Entity, int> updateQueue = new NativeHashMap<Entity, int>(m_SelectableGroup.CalculateEntityCount(), Allocator.TempJob);
-            SetColorValueJob setJob = new SetColorValueJob()
+            var eventReader = m_EventQuery.CreatePointerEventReader(Allocator.TempJob);
+            if (eventReader.EntityCount> 0)
             {
-                SelectableColorType = selectableColorType,
-                SelectableType = selectableType,
-                ColorMultiplierFromEntity = GetComponentDataFromEntity<VertexColorMultiplier>(),
-                EntityType = entityType,
-                PointerInputType = pointerBufferFromEntity,
-                TargetToEvent = targetToEvent,
-                ToUpdate = m_Barrier.CreateAddFlagComponentCommandBuffer<UpdateElementColor>().AsParallelWriter()
-            };
-            inputDeps = setJob.Schedule(m_SelectableGroup, inputDeps);
-            m_Barrier.AddJobHandleForProducer(inputDeps);
-            inputDeps = updateQueue.Dispose(inputDeps);
+
+                NativeHashMap<Entity, int> updateQueue =
+                    new NativeHashMap<Entity, int>(m_SelectableGroup.CalculateEntityCount(), Allocator.TempJob);
+                SetColorValueJob setJob = new SetColorValueJob()
+                {
+                    SelectableColorType = GetComponentDataFromEntity<SelectableColor>(true),
+                    SelectableType = GetComponentDataFromEntity<Selectable>(),
+                    ColorMultiplierFromEntity = GetComponentDataFromEntity<VertexColorMultiplier>(),
+                    EventReader = eventReader,
+                    ToUpdate = m_Barrier.CreateFlagComponentCommandBuffer<UpdateElementColor>().AsParallelWriter()
+                };
+                inputDeps = setJob.Schedule(m_SelectableGroup, inputDeps);
+                m_Barrier.AddJobHandleForProducer(inputDeps);
+                inputDeps = updateQueue.Dispose(inputDeps);
+            }
+            inputDeps = eventReader.Dispose(inputDeps);
             return inputDeps;
         }
     }

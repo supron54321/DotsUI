@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -8,45 +7,18 @@ using Unity.Transforms;
 
 namespace DotsUI.Input
 {
-    internal struct SpawnPointerEvents : IJob
+    [BurstCompile]
+    struct ClearNativeBuffers : IJob
     {
-        [ReadOnly] public NativeMultiHashMap<Entity,  PointerInputBuffer> TargetToEvent;
-        public EntityCommandBuffer Ecb;
-        public EntityArchetype EventArchetype;
-
-        struct EventComparer : IComparer< PointerInputBuffer>
-        {
-            public int Compare(PointerInputBuffer x, PointerInputBuffer y) => x.EventId.CompareTo(y.EventId);
-        }
+        [WriteOnly]
+        public NativeList<NativePointerButtonEvent> PointerEventBuffer;
+        [WriteOnly]
+        public NativeList<NativeKeyboardInputEvent> KeyboardEventBuffer;
 
         public void Execute()
         {
-            var targets = TargetToEvent.GetKeyArray(Allocator.Temp);
-            NativeList<PointerInputBuffer> eventList = new NativeList<PointerInputBuffer>(4, Allocator.Temp);
-            for (int i = 0; i < targets.Length; i++)
-            {
-                var target = targets[i];
-                EventComparer eventComparer = new EventComparer();
-                if (TargetToEvent.TryGetFirstValue(target, out var item, out var it))
-                {
-                    var eventEntity = Ecb.CreateEntity(EventArchetype);
-                    Ecb.SetComponent(eventEntity, new PointerEvent
-                    {
-                        Target = target
-                    });
-                    var buffer = Ecb.SetBuffer<PointerInputBuffer>(eventEntity);
-                    do
-                    {
-                        eventList.Add(item);
-                    } while (TargetToEvent.TryGetNextValue(out item, ref it));
-                    eventList.Sort(eventComparer);
-                    buffer.ResizeUninitialized(eventList.Length);
-                    for (int j = 0; j < eventList.Length; j++)
-                        buffer[j] = eventList[j];
-                    eventList.Clear();
-                    eventList.Clear();
-                }
-            }
+            PointerEventBuffer.Clear();
+            KeyboardEventBuffer.Clear();
         }
     }
     [BurstCompile]
@@ -54,10 +26,9 @@ namespace DotsUI.Input
     {
         [ReadOnly] public Entity StateEntity;
         [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<Entity> Hits;
-        [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<MouseInputFrameData> PointerFrameData;
+        [ReadOnly] public NativeArray<MouseInputFrameData> PointerFrameData;
 
         [ReadOnly]
-        [DeallocateOnJobCompletion]
         public NativeArray<NativePointerButtonEvent> PointerEvents;
 
         public NativeArray<MouseButtonState> ButtonStates;
@@ -67,6 +38,7 @@ namespace DotsUI.Input
         [ReadOnly] public float DragThreshold;
 
         public NativeMultiHashMap<Entity, PointerInputBuffer> TargetToEvent;
+        public NativeList<Entity> PointerEventList;
 
         // used to preserve order in NativeMultiHashMap
         private int m_EventIdCounter;
@@ -75,6 +47,7 @@ namespace DotsUI.Input
         {
             m_EventIdCounter = 0;
             TargetToEvent.Clear();
+            PointerEventList.Clear();
             var state = StateFromEntity[StateEntity];
             // Currently only mouse is fully supported. That's why I pick only the first hit entity (mouse) and skip touches
             Entity mouseHit = Hits[0];
@@ -82,6 +55,22 @@ namespace DotsUI.Input
             UpdateButtons(mouseHit, ref state);
             UpdateDrag(mouseHit, ref state);
             StateFromEntity[StateEntity] = state;
+            SaveTargetList();
+        }
+
+        private void SaveTargetList()
+        {
+            // NativeMultiHashMap duplicates keys. We need unique key list
+            // TODO: Need more efficient implementation
+            var tempKeyArray = TargetToEvent.GetKeyArray(Allocator.Temp);
+            var uniqueMap = new NativeHashMap<Entity, int>(tempKeyArray.Length, Allocator.Temp);
+            for (int i = 0; i < tempKeyArray.Length; i++)
+            {
+                uniqueMap.TryAdd(tempKeyArray[i], 0);
+            }
+            PointerEventList.AddRange(uniqueMap.GetKeyArray(Allocator.Temp));
+            tempKeyArray.Dispose();
+            uniqueMap.Dispose();
         }
 
         private void UpdateDrag(Entity mouseHit, ref InputSystemState state)
