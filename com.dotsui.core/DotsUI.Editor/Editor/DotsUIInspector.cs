@@ -16,6 +16,7 @@ public class DotsUIInspector : EditorWindow
 
     private EntityQuery m_RootQuery;
 
+    private Foldout m_CanvasProperties;
     private Foldout m_MeshProperties;
 
     [MenuItem("DotsUI/Inspector")]
@@ -44,17 +45,18 @@ public class DotsUIInspector : EditorWindow
         m_ListView.onSelectionChanged += OnCanvasSelected;
 
         m_MeshProperties = ui.Q<Foldout>("MeshProperties");
+        m_CanvasProperties = ui.Q<Foldout>("CanvasProperties");
     }
 
     private void Update()
     {
-        if (World.Active != null)
+        if (World.DefaultGameObjectInjectionWorld != null)
             UpdateEntities();
     }
 
     void UpdateEntities()
     {
-        EntityManager entityManager = World.Active.EntityManager;
+        EntityManager entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         var rootQuery = entityManager.CreateEntityQuery(new EntityQueryDesc
         {
             All = new ComponentType[]
@@ -80,19 +82,39 @@ public class DotsUIInspector : EditorWindow
             m_Roots.Clear();
             foreach (var root in roots)
             {
-                m_Roots.Add((entityManager.GetName(root), root));
+                m_Roots.Add((GetEntityName(entityManager, root), root));
             }
 
             m_ListView.itemsSource = m_Roots;
         }
     }
 
+    private  string GetEntityName(EntityManager manager, Entity entity)
+    {
+        string inEditorName = manager.GetName(entity);
+        return !string.IsNullOrEmpty(inEditorName) ? inEditorName : $"Entity {entity.Index}";
+    }
+
     private void OnCanvasSelected(System.Collections.Generic.List<object> obj)
     {
+        var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         var item = ((string, Entity)) obj[0];
         m_MeshProperties.contentContainer.Clear();
-        var meshContainer = World.Active.EntityManager.GetSharedComponentData<CanvasMeshContainer>(item.Item2);
+        var meshContainer = entityManager.GetSharedComponentData<CanvasMeshContainer>(item.Item2);
         m_MeshProperties.contentContainer.Add(new Label($"Vertices: {meshContainer.UnityMesh.vertexCount}"));
         m_MeshProperties.contentContainer.Add(new Label($"SubMeshes: {meshContainer.UnityMesh.subMeshCount}"));
+
+        m_CanvasProperties.contentContainer.Clear();
+        AddEntityProperties(m_CanvasProperties, item.Item2, entityManager);
+    }
+
+    private void AddEntityProperties(Foldout propertyContainer, Entity entity, EntityManager entityManager)
+    {
+        var canvasSizeContainer = new Foldout();
+        canvasSizeContainer.text = "CanvasSize";
+        m_CanvasProperties.contentContainer.Add(canvasSizeContainer);
+
+        var canvasSize = entityManager.GetComponentData<CanvasSize>(entity);
+        canvasSizeContainer.contentContainer.Add(new Label($"{canvasSize.Value}"));
     }
 }

@@ -2,6 +2,19 @@
 
 **This file contains changelog for all DotsUI packages**
 
+## [0.5.0] 2019-12-15
+
+### Added
+
+* Toggle control
+
+
+### Changes
+
+* Refactored input system (significant performance improvement)
+* Implemented dedicated parent system. It works with the same components, but write group prevents some Unity.Transforms systems from querying entities with RectTransfrom. This way we can remove some unnecessary components (like LocalToWorld and LocalToParent) and see a great performance boost.
+
+
 ## [0.4.0] 2019-09-11
 
 ### Added

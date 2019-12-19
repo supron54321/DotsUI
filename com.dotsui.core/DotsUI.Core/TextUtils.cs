@@ -40,16 +40,16 @@ namespace DotsUI.Core
 
             var buffer = mgr.GetBuffer<FontGlyphData>(entity);
             buffer.Reserve(font.glyphLookupTable.Count);
-            //foreach (var glyph in font.characterLookupTable)
-            //{
-            //    buffer.Add(new FontGlyphData()
-            //    {
-            //        Character = (ushort)glyph.Key,
-            //        Scale = glyph.Value.scale,
-            //        Rect = glyph.Value.glyph.glyphRect,
-            //        Metrics = glyph.Value.glyph.metrics
-            //    });
-            //}
+            foreach (var glyph in font.characterLookupTable)
+            {
+                buffer.Add(new FontGlyphData()
+                {
+                    Character = (ushort)glyph.Key,
+                    Scale = glyph.Value.scale,
+                    Rect = glyph.Value.glyph.glyphRect,
+                    Metrics = glyph.Value.glyph.metrics
+                });
+            }
         }
 
         public static bool GetGlyph(ushort character, ref DynamicBuffer<FontGlyphData> glyphData, out FontGlyphData glyph)

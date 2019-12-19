@@ -11,7 +11,7 @@ namespace DotsUI.Core
     [UpdateInGroup(typeof(TransformSystemGroup))]
     [UpdateAfter(typeof(EndFrameParentSystem))]
     [UnityEngine.ExecuteAlways]
-    public class EndFrameParentSystem : RectTransformParentSystem
+    public class EndFrameRectTransformParentSystem : RectTransformParentSystem
     {
     }
     /// <summary>

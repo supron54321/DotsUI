@@ -12,12 +12,12 @@ public class PrefabExample : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (World.Active == null)
+        if (World.DefaultGameObjectInjectionWorld == null)
             DefaultWorldInitialization.Initialize("UI World", false);
         //var entityManager = World.Active.EntityManager;
 
-        World.Active.GetOrCreateSystem<UserInputSystemGroup>().AddSystemToUpdateList(World.Active.GetOrCreateSystem<InstantiationSystem>());
-        World.Active.GetOrCreateSystem<UserInputSystemGroup>().AddSystemToUpdateList(World.Active.GetOrCreateSystem<CloseButtonSystem>());
+        World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<UserInputSystemGroup>().AddSystemToUpdateList(World.Active.GetOrCreateSystem<InstantiationSystem>());
+        World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<UserInputSystemGroup>().AddSystemToUpdateList(World.Active.GetOrCreateSystem<CloseButtonSystem>());
 
         //RectTransformToEntity transformToEntity = new RectTransformToEntity(100, Allocator.Temp);
         //RectTransformConversionUtils.ConvertCanvasHierarchy(m_TopCanvas, World.Active.EntityManager, transformToEntity);

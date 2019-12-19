@@ -22,8 +22,14 @@ namespace DotsUI.Hybrid
         void ConvertImage(Image image)
         {
             var entity = GetPrimaryEntity(image);
-            var sprite = image.sprite ?? DefaultSprite;
+            Sprite sprite = null;
+            if (image.sprite != null)
+                sprite = image.sprite;
+            else
+                sprite = DefaultSprite;
             var assetEntity = GetPrimaryEntity(sprite);
+
+            //Debug.Log($"image.sprite: {image.sprite} DefaultSprite: {DefaultSprite} sprite: {sprite} assetEntity: {assetEntity}");
 
             SpriteImage spriteImage = new SpriteImage
             {

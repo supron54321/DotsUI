@@ -14,6 +14,7 @@ namespace DotsUI.Hybrid
         private EntityQuery m_UpdateSizeGroup;
         private int m_OldWidth;
         private int m_OldHeight;
+        private EntityQuery m_MissingSize;
 
         protected override void OnCreate()
         {
@@ -34,6 +35,7 @@ namespace DotsUI.Hybrid
         {
             int newWidth = Screen.width;
             int newHeight = Screen.height;
+
             if (m_OldWidth != newWidth || m_OldHeight != newHeight)
             {
                 using (var chunkArray = m_UpdateSizeGroup.CreateArchetypeChunkArray(Allocator.TempJob))
